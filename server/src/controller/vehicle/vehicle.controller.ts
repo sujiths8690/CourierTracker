@@ -1,5 +1,5 @@
 import { Request, Response } from "express";
-import vehicleService from "../../service/vehicle/vehicle.services";
+import vehicleService, { getNearbyVehicles } from "../../service/vehicle/vehicle.services";
 
 export const createVehicle = async (req: Request, res: Response) => {
   try {
@@ -112,5 +112,32 @@ export const deleteVehicle = async (req: Request, res: Response) => {
     }
 
     res.status(500).json({ message: err.message });
+  }
+};
+
+export const getNearbyVehiclesController = async (req: Request, res: Response) => {
+  try {
+    const { lat, lng } = req.query;
+
+    if (!lat || !lng) {
+      return res.status(400).json({
+        message: "lat & lng required"
+      });
+    }
+
+    const vehicles = await getNearbyVehicles(
+      Number(lat),
+      Number(lng)
+    );
+
+    res.json({
+      message: "Nearby vehicles fetched",
+      data: vehicles
+    });
+
+  } catch (err) {
+    res.status(500).json({
+      message: "Failed to fetch nearby vehicles"
+    });
   }
 };

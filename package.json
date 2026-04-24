@@ -3,19 +3,15 @@
   "version": "1.0.0",
   "main": "index.js",
   "scripts": {
-    "dev": "ts-node-dev --respawn --transpile-only src/app.ts",
+    "dev": "concurrently \"npm run server\" \"npm run client\"",
+    "server": "ts-node-dev --respawn --transpile-only server/src/app.ts",
+    "client": "npm run dev --prefix ./client",
     "build": "tsc",
-    "start": "node dist/index.js",
-    "prisma:generate": "prisma generate",
-    "prisma:migrate": "prisma migrate dev",
-    "prisma:push": "prisma db push",
-    "prisma:pull": "prisma db pull",
-    "prisma:studio": "prisma studio"
+    "start": "node dist/index.js"
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
-  "description": "",
   "devDependencies": {
     "@types/bcrypt": "^6.0.0",
     "@types/cors": "^2.8.19",
@@ -24,6 +20,7 @@
     "@types/node": "^25.6.0",
     "@types/uuid": "^10.0.0",
     "@types/ws": "^8.18.1",
+    "concurrently": "^9.2.1",
     "prisma": "^6.19.3",
     "ts-node-dev": "^2.0.0",
     "typescript": "5.4"
@@ -38,5 +35,6 @@
     "jsonwebtoken": "^9.0.3",
     "uuid": "^9.0.1",
     "ws": "^8.20.0"
-  }
+  },
+  "description": ""
 }

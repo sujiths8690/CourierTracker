@@ -11,6 +11,7 @@ import authRoutes from "./route/auth/auth.route";
 import vehicleRoutes from "./route/vehicle/vehicle.routes";
 import trackingRoutes from "./route/tracking/tracking.routes";
 import customerRoutes from "./route/customer/customer.route";
+import dashboardRoutes from "./route/dashboard/dashboard.routes";
 
 dotenv.config();
 
@@ -36,6 +37,7 @@ app.use("/api/auth", authRoutes);
 app.use("/api/vehicle", vehicleRoutes);
 app.use("/api/tracking", trackingRoutes);
 app.use("/api/customer", customerRoutes);
+app.use("/api/dashboard", dashboardRoutes);
 
 app.get("/", (_req, res) => {
   res.send("Welcome to Courier Tracker!");
@@ -45,7 +47,7 @@ app.get("/health", (_req, res) => {
   res.status(200).json({ status: "OK" });
 });
 
-const port = Number(process.env.PORT) || 3000;
+const port = Number(process.env.PORT) || 3003;
 
 server.listen(port, "0.0.0.0", () => {
   console.log(`Server running on ${port}`);
