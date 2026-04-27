@@ -1,203 +1,144 @@
-import { useEffect } from "react";
-import { useDispatch, useSelector } from "react-redux";
-import TruckMap from "../components/TruckMap";
-import { fetchBookingById } from "../redux/features/booking/bookingActions";
-import { selectSelectedBooking } from "../redux/features/booking/bookingSelector";
+import { useEffect, useState, useMemo } from "react";
+import TrackingMap from "../components/TrackingMap";
 
-export default function TrackingPage({ bookingId, setPage, t }) {
-  const dispatch = useDispatch();
-  const booking = useSelector(selectSelectedBooking);
+export default function BookingTrackingPage({ booking, setPage, t }) {
 
-  // 🔥 FETCH BOOKING
+  const [vehiclePos, setVehiclePos] = useState([
+    booking.vehicle.lat,
+    booking.vehicle.lng
+  ]);
+
+  const [coveredPath, setCoveredPath] = useState([]);
+
+  // 🔥 WebSocket live tracking
   useEffect(() => {
-    if (bookingId) {
-      dispatch(fetchBookingById(bookingId));
-    }
-  }, [bookingId, dispatch]);
+    const ws = new WebSocket("ws://localhost:3000");
 
-  // 🎨 STATUS → PROGRESS (fallback if backend not sending progress)
-  const getProgress = (status) => {
-    switch (status) {
-      case "PENDING":
-        return 10;
-      case "ONGOING":
-        return 60;
-      case "COMPLETED":
-        return 100;
-      default:
-        return 0;
-    }
-  };
+    ws.onopen = () => {
+      ws.send(JSON.stringify({ type: "SUBSCRIBE_MAP" }));
+    };
 
-  const progress = booking?.progress ?? getProgress(booking?.status);
+    ws.onmessage = (event) => {
+      const data = JSON.parse(event.data);
+
+      if (data.type === "VEHICLE_LOCATION" &&
+          data.vehicleId === booking.vehicle.id) {
+
+        const newPos = [data.lat, data.lng];
+
+        setVehiclePos(newPos);
+
+        // ✅ store covered path
+        setCoveredPath(prev => [...prev, newPos]);
+      }
+    };
+
+    return () => ws.close();
+  }, [booking.vehicle.id]);
+
+  // 🔥 progress calculation
+  const progress = useMemo(() => {
+    if (!booking.route || booking.route.length === 0) return 0;
+
+    const total = booking.route.length;
+    const covered = coveredPath.length;
+
+    return Math.min((covered / total) * 100, 100);
+  }, [coveredPath, booking.route]);
 
   return (
-    <div
-      className="tracking-page"
-      style={{ background: t.bg }}
-    >
-      <div className="tracking-wrapper">
+    <div className="bcp-root">
+      <div className="bcp-inner">
 
-        {/* ================= HEADER ================= */}
-        <div className="tracking-header">
-          <button
-            className="tracking-back-btn"
-            onClick={() => setPage("app")}
-            style={{
-              border: `1px solid ${t.border}`,
-              color: t.text
-            }}
-          >
+        {/* HEADER */}
+        <div className="bcp-topbar">
+          <button className="bcp-back-btn" onClick={() => setPage("dashboard")}>
             ← Back
           </button>
-
-          <h2
-            className="tracking-title"
-            style={{ color: t.text }}
-          >
-            Live Tracking
-          </h2>
-
-          <span
-            className="tracking-id"
-            style={{ color: t.accent }}
-          >
-            {booking?.bookingId || booking?.id}
-          </span>
+          <h2 className="bcp-page-title">Live Tracking</h2>
         </div>
 
-        {/* ================= MAP ================= */}
-        <TruckMap t={t} booking={booking} />
+        <div className="bcp-cards">
 
-        {/* ================= PROGRESS ================= */}
-        <div
-          className="card"
-          style={{
-            background: t.surface,
-            border: `1px solid ${t.border}`
-          }}
-        >
-          <div className="progress-header">
-            <span style={{ color: t.textMuted }}>
-              Journey Progress
-            </span>
+          {/* LEFT */}
+          <div className="bcp-left">
 
-            <span
-              style={{
-                fontWeight: 700,
-                fontSize: 22,
-                color: t.text
-              }}
-            >
-              {progress}%
-            </span>
-          </div>
+            {/* DETAILS CARD */}
+            <div className="bcp-card">
+              <div className="bcp-card-body">
 
-          <div
-            className="progress-bar-bg"
-            style={{ background: t.surfaceAlt }}
-          >
-            <div
-              className="progress-bar-fill"
-              style={{
-                width: `${progress}%`,
-                background: `linear-gradient(90deg, ${t.accent}, ${t.accentHover || t.accent})`,
-              }}
-            />
-          </div>
-
-          {/* 🔥 REAL INFO */}
-          <div className="info-grid">
-            <div className="info-box" style={{ background: t.surfaceAlt }}>
-              <div style={{ color: t.textMuted }}>Status</div>
-              <div style={{ color: t.text }}>{booking?.status}</div>
-            </div>
-
-            <div className="info-box" style={{ background: t.surfaceAlt }}>
-              <div style={{ color: t.textMuted }}>Last Update</div>
-              <div style={{ color: t.text }}>
-                {booking?.lastUpdated
-                  ? new Date(booking.lastUpdated).toLocaleTimeString()
-                  : "--"}
-              </div>
-            </div>
-
-            <div className="info-box" style={{ background: t.surfaceAlt }}>
-              <div style={{ color: t.textMuted }}>Vehicle</div>
-              <div style={{ color: t.text }}>
-                {booking?.vehicle?.number || "--"}
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* ================= MILESTONES ================= */}
-        <div
-          className="card"
-          style={{
-            background: t.surface,
-            border: `1px solid ${t.border}`
-          }}
-        >
-          <div
-            className="milestone-title"
-            style={{ color: t.textMuted }}
-          >
-            Route Milestones
-          </div>
-
-          {[
-            "Pickup",
-            "In Transit",
-            "Near Destination",
-            "Delivered",
-          ].map((step, i) => {
-            const done = progress >= (i + 1) * 25;
-            const active =
-              progress >= i * 25 && progress < (i + 1) * 25;
-
-            return (
-              <div
-                key={step}
-                className="milestone-item"
-                style={{ borderColor: t.border }}
-              >
-                <div
-                  className="milestone-circle"
-                  style={{
-                    background: done
-                      ? t.success
-                      : active
-                      ? t.accent
-                      : t.surfaceAlt,
-                    color: done || active ? "#fff" : t.textMuted,
-                  }}
-                >
-                  {done ? "✓" : i + 1}
-                </div>
-
-                <div>
-                  <div
-                    style={{
-                      color: done || active ? t.text : t.textMuted,
-                      fontWeight: active ? 600 : 400,
-                    }}
-                  >
-                    {step}
+                <div className="bcp-summary-row top-row">
+                  <div>
+                    <p className="bcp-summary-item-label">Customer</p>
+                    <p className="bcp-summary-item-value">
+                      {booking.customer.name}
+                    </p>
                   </div>
 
-                  {active && (
-                    <div style={{ color: t.accent }}>
-                      ● In progress
-                    </div>
-                  )}
+                  <div style={{ textAlign: "right" }}>
+                    <p className="bcp-summary-item-label">Vehicle</p>
+                    <p className="bcp-summary-item-value">
+                      {booking.vehicle.number}
+                    </p>
+                  </div>
                 </div>
-              </div>
-            );
-          })}
-        </div>
 
+                <div className="bcp-summary-row">
+                  <p className="bcp-summary-item-label">Owner</p>
+                  <p className="bcp-summary-item-value">
+                    {booking.vehicle.owner}
+                  </p>
+                </div>
+
+                <div className="bcp-summary-row cost-row">
+                  <div className="bcp-cost-box">
+                    ₹{booking.totalCost}
+                  </div>
+                </div>
+
+              </div>
+            </div>
+
+            {/* MAP */}
+            <div className="bcp-card">
+              <div className="bcp-map-wrap" style={{ height: 400 }}>
+                <TrackingMap
+                  vehiclePos={vehiclePos}
+                  fullRoute={booking.route}
+                  coveredPath={coveredPath}
+                  booking={booking}
+                />
+              </div>
+
+              {/* PROGRESS */}
+              <div style={{ padding: 12 }}>
+                <div style={{
+                  height: 8,
+                  background: "#eee",
+                  borderRadius: 6,
+                  overflow: "hidden"
+                }}>
+                  <div style={{
+                    width: `${progress}%`,
+                    height: "100%",
+                    background: "var(--bcp-accent)",
+                    transition: "width 0.5s"
+                  }} />
+                </div>
+
+                <p style={{ marginTop: 6, fontSize: 12, color: "#666" }}>
+                  {progress.toFixed(0)}% completed
+                </p>
+              </div>
+
+            </div>
+
+          </div>
+
+        </div>
       </div>
     </div>
   );
 }
+
+

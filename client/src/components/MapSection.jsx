@@ -1,231 +1,315 @@
-import {
-  MapContainer,
-  TileLayer,
-  Marker,
-  Polyline,
-  useMapEvents,
-  useMap
-} from "react-leaflet";
-import { useState, useEffect } from "react";
+import { MapContainer, TileLayer, Marker, Popup, useMapEvents, useMap } from "react-leaflet";
+import { useEffect } from "react";
 import L from "leaflet";
-import truckImg from "../assets/truck.png";
-import pickupImg from "../assets/pickup.png";
+import truckIconImg from "../assets/truck.png";
+import pickupIconImg from "../assets/pickup.png"; // if you have
+import { useRef } from "react";
+import { Polyline } from "react-leaflet";
 
-// 🔥 Fix default marker icons
-delete L.Icon.Default.prototype._getIconUrl;
-L.Icon.Default.mergeOptions({
-  iconRetinaUrl:
-    "https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon-2x.png",
-  iconUrl:
-    "https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png",
-  shadowUrl:
-    "https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png",
-});
+// 🔥 Handle map clicks
+import axios from "axios";
 
-// 🔵 Pickup marker
-const pickupIcon = L.divIcon({
-  className: "pickup-marker",
-  html: `<div class="pickup-dot"></div>`,
-  iconSize: [20, 20],
-  iconAnchor: [10, 10],
-});
+const KEY = import.meta.env.VITE_LOCATIONIQ_KEY;
 
-// 🔴 Destination marker
-const destinationIcon = L.divIcon({
-  className: "destination-marker",
-  html: `<div class="destination-dot"></div>`,
-  iconSize: [20, 20],
-  iconAnchor: [10, 10],
-});
-
-// 🔵 Current location dot
-const userLocationIcon = L.divIcon({
-  className: "user-location",
-  html: `<div class="user-location-dot"></div>`,
-  iconSize: [20, 20],
-  iconAnchor: [10, 10],
-});
-
-// 🚚 Vehicle marker (with number + animation)
-const createVehicleIcon = (v, selected) => {
-  const img = v.type === "PICKUP" ? pickupImg : truckImg;
-
-  return L.divIcon({
-    className: "vehicle-marker",
-    html: `
-      <div class="vehicle-wrapper">
-
-        <img src="${img}" class="vehicle-img" />
-
-        ${
-          selected
-            ? `
-          <div class="vehicle-popup">
-            <div class="vehicle-number">
-              ${v.number || "No Number"}
-            </div>
-            <div class="vehicle-price">
-              ₹${v.pricePerKm ?? "--"}/km
-            </div>
-          </div>
-        `
-            : ""
-        }
-
-      </div>
-    `,
-    iconSize: [60, 40],
-    iconAnchor: [20, 20],
-  });
-};
-
-// 🎯 Auto fit bounds (VERY IMPORTANT)
-function FitBounds({ points }) {
+function FitBounds({ route }) {
   const map = useMap();
-  const [hasFitted, setHasFitted] = useState(false);
 
   useEffect(() => {
-    if (!points || points.length === 0) return;
+    if (route && route.length > 0) {
+      map.fitBounds(route, { padding: [50, 50] });
+    }
+  }, [route, map]);
 
-    // 🔥 only run once
-    if (hasFitted) return;
+  return null;
+}
 
-    const bounds = L.latLngBounds(points);
-    map.fitBounds(bounds, { padding: [50, 50] });
+function MapClickHandler({ onSelect }) {
+  useMapEvents({
+    async click(e) {
+      const { lat, lng } = e.latlng;
 
-    setHasFitted(true);
-  }, [points, hasFitted]);
+      try {
+        const res = await axios.get(
+          "https://us1.locationiq.com/v1/reverse",
+          {
+            params: {
+              key: KEY,
+              lat,
+              lon: lng,
+              format: "json",
+            },
+          }
+        );
+
+        const name = res.data.display_name;
+
+        onSelect({
+          lat,
+          lng,
+          name,
+        });
+
+      } catch (err) {
+        console.error("Reverse geocode error:", err);
+
+        // fallback
+        onSelect({
+          lat,
+          lng,
+          name: `Lat: ${lat.toFixed(4)}, Lng: ${lng.toFixed(4)}`,
+        });
+      }
+    },
+  });
+
+  return null;
+}
+
+// 🔥 Recenter when position changes
+function RecenterMap({ pos, route }) {
+  const map = useMap();
+
+  useEffect(() => {
+    // ✅ If route exists → fit route (priority)
+    if (route && route.length > 0) {
+      map.fitBounds(route, { padding: [50, 50] });
+      return;
+    }
+
+    // ✅ Only center once when pickup is first set
+    if (pos) {
+      map.setView(pos, 13);
+    }
+
+  }, [route]); // 🔥 IMPORTANT: NOT watching pos
 
   return null;
 }
 
 export default function MapSection({
   pos,
+  isCurrentLocation= false,
   onSelect,
   vehicles = [],
   showVehicles = false,
-  clickable = true,
-
-  route = [],
+  clickable = false,
+  route,
+  routeMeta,  
   destination,
-  destinationRoute = [],
+  destinationRoute,
+  destinationMeta,
   onVehicleSelect,
-  selectedVehicleId,
-  onClearVehicle,
-
-  isCurrentLocation
+  selectedVehicleId 
 }) {
-  const [position, setPosition] = useState(pos || [10, 76]);
-  const API_KEY = import.meta.env.VITE_LOCATIONIQ_KEY;
 
-  // 🟢 Click to select pickup
-  function LocationPicker() {
-    useMapEvents({
-      async click(e) {
-        if (!clickable) return;
+  const userLocationIcon = L.divIcon({
+    className: "",
+    html: `<div class="user-location-dot"></div>`,
+    iconSize: [20, 20],
+    iconAnchor: [10, 10],
+  });
 
-        const { lat, lng } = e.latlng;
-        setPosition([lat, lng]);
+  const getMidPoint = (coords) => {
+    if (!coords || coords.length === 0) return null;
+    return coords[Math.floor(coords.length / 2)];
+  };
 
-        let address = `${lat.toFixed(5)}, ${lng.toFixed(5)}`;
+  const createVehicleIcon = (v, selectedVehicleId) => {
+    const formatDuration = (minutes) => {
+      if (!minutes) return "";
+      const hrs = Math.floor(minutes / 60);
+      const mins = Math.round(minutes % 60);
 
-        try {
-          const res = await fetch(
-            `https://us1.locationiq.com/v1/reverse?key=${API_KEY}&lat=${lat}&lon=${lng}&format=json`
-          );
-          const data = await res.json();
-          if (data?.display_name) address = data.display_name;
-        } catch (err) {}
+      if (hrs === 0) return `${mins} min`;
+      if (mins === 0) return `${hrs} hr`;
+      return `${hrs} hr ${mins} min`;
+    };
 
-        onSelect?.({ lat, lng, name: address });
-        onClearVehicle?.();
-      },
+    const etaText = v.eta ? formatDuration(v.eta) : "";
+
+    return L.divIcon({
+      className: "vehicle-marker",
+      html: `
+        <div class="vehicle-wrapper ${v.id === selectedVehicleId ? "selected" : ""}">
+
+          ${
+            v.id === selectedVehicleId
+              ? `
+              <div class="vehicle-label">
+                <div class="vehicle-number">${v.number}</div>
+                <div class="vehicle-price">₹${v.pricePerKm || 0}</div>
+              </div>
+              `
+              : ""
+          }
+
+          <img src="${v.type.toLowerCase() === "pickup" ? pickupIconImg : truckIconImg}" />
+
+          ${
+            etaText
+              ? `<div class="eta-box">${etaText}</div>`
+              : ""
+          }
+
+        </div>
+      `,
+      iconSize: [50, 70],
+      iconAnchor: [25, 60],
     });
-
-
-  }
-
-  // 🔁 update center
-  useEffect(() => {
-    if (pos) setPosition(pos);
-  }, [pos]);
-
-  // 📍 All points for auto zoom
-  const allPoints = [
-    ...(route || []),
-    ...(destinationRoute || []),
-    ...(vehicles || [])
-      .filter(v => v.lat && v.lng)
-      .map(v => [v.lat, v.lng]),
-    ...(position ? [position] : []),
-    ...(destination ? [destination] : [])
-  ];
+  };
 
   return (
     <MapContainer
-      center={position}
+      center={pos}
       zoom={13}
       style={{ height: "100%", width: "100%" }}
     >
-      {/* 🔥 IMPORTANT FIX */}
-      <FitBounds points={allPoints} />
-
       <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
 
-      <LocationPicker />
+      <RecenterMap pos={pos} />
 
-      {/* 📍 Current location */}
-      {isCurrentLocation && position && (
-        <Marker position={position} icon={userLocationIcon} />
+      {/* ✅ Only enable click if needed */}
+      {clickable && onSelect && (
+        <MapClickHandler onSelect={onSelect} />
       )}
 
-      {/* 📍 Pickup marker (ALWAYS SHOW) */}
-    {position && (
-      <Marker position={position} icon={pickupIcon} />
-    )}
+      {/* ✅ Main marker (customer / pickup / vehicle) */}
+      {pos && (
+        <Marker
+          position={pos}
+          icon={isCurrentLocation ? userLocationIcon : undefined}
+        />
+      )}
 
-      {/* 🚚 Vehicles */}
+      {destination && (
+        <Marker position={destination}>
+          <Popup>Destination</Popup>
+        </Marker>
+      )}
+
+      {destinationRoute && destinationRoute.length > 0 && (
+        <>
+          {/* Outline */}
+          <Polyline
+            positions={destinationRoute}
+            pathOptions={{
+              color: "#0b3d91",
+              weight: 8,
+              opacity: 0.9,
+              lineJoin: "round",
+              lineCap: "round"
+            }}
+          />
+
+          {/* Main blue */}
+          <Polyline
+            positions={destinationRoute}
+            pathOptions={{
+              color: "#4285F4",
+              weight: 5,
+              opacity: 1,
+              lineJoin: "round",
+              lineCap: "round"
+            }}
+          />
+
+          {/* ✨ Animated flow */}
+          <Polyline
+            positions={destinationRoute}
+            pathOptions={{
+              color: "#9ec9ff", // light blue glow
+              weight: 3,
+              dashArray: "10, 20",
+              className: "flow-line",
+              lineCap: "round"
+            }}
+          />
+        </>
+      )}
+
+      {/* {destinationRoute && destinationMeta && (
+        <Marker
+          position={getMidPoint(destinationRoute)}
+          icon={L.divIcon({
+            className: "route-label",
+            html: `<div class="route-box green">
+                     ${destinationMeta.distance.toFixed(1)} km · ${Math.round(destinationMeta.time)} min
+                  </div>`
+          })}
+        />
+      )} */}
+
+      {/* ✅ Show vehicles only when needed */}
       {showVehicles &&
         vehicles.map((v) =>
           v.lat && v.lng ? (
             <Marker
               key={v.id}
               position={[v.lat, v.lng]}
-              icon={createVehicleIcon(v, v.id === selectedVehicleId)}
+              icon={createVehicleIcon(v, selectedVehicleId)}
               eventHandlers={{
-                click: () => onVehicleSelect?.(v.id),
+                click: () => {
+                  onVehicleSelect?.(v.id);
+                }
               }}
-            />
+            >
+            </Marker>
           ) : null
         )}
 
-      {/* 📍 Destination */}
-      {destination && (
-        <Marker position={destination} icon={destinationIcon} />
+        {route && route.length > 0 && <FitBounds route={route} />}
+
+      {route && route.length > 0 && (
+        <>
+          {/* Outline */}
+          <Polyline
+            positions={route}
+            pathOptions={{
+              color: "#b85c00",
+              weight: 8,
+              opacity: 0.9,
+              lineJoin: "round",
+              lineCap: "round"
+            }}
+          />
+
+          {/* Main orange */}
+          <Polyline
+            positions={route}
+            pathOptions={{
+              color: "#FF8C00",
+              weight: 5,
+              opacity: 1,
+              lineJoin: "round",
+              lineCap: "round"
+            }}
+          />
+
+          {/* ✨ Animated flow */}
+          <Polyline
+            positions={route}
+            pathOptions={{
+              color: "#ffd199", // light orange flow
+              weight: 3,
+              dashArray: "10, 20",
+              className: "flow-line",
+              lineCap: "round"
+            }}
+          />
+        </>
       )}
 
-      {/* 🔵 Route (vehicle → pickup) */}
-      {route.length > 0 && (
-        <Polyline
-          positions={route}
-          pathOptions={{
-            color: "#007bff",
-            weight: 5,
-          }}
-        />
-      )}
-
-      {/* 🟢 Destination route */}
-      {destinationRoute.length > 0 && (
-        <Polyline
-          positions={destinationRoute}
-          pathOptions={{
-            color: "green",
-            weight: 5,
-            dashArray: "6, 10",
-          }}
-        />
-      )}
-    </MapContainer>
+    {/* {route && routeMeta && (
+      <Marker
+        position={getMidPoint(route)}
+        icon={L.divIcon({
+          className: "route-label",
+          html: `<div class="route-box">
+                  🚚 ${routeMeta.distance.toFixed(1)} km · ${Math.round(routeMeta.time)} min
+                </div>`
+        })}
+      />
+    )} */}
+        </MapContainer>
   );
 }

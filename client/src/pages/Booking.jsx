@@ -1,188 +1,152 @@
-// components/BookingSection.jsx
-
 import { useEffect } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { fetchBookings } from "../redux/features/booking/bookingActions";
-import { fetchCustomers } from "../redux/features/customer/customerActions";
-import { fetchVehicles } from "../redux/features/vehicle/vehicleActions";
+import { selectBookings, selectBookingLoading } from "../redux/features/booking/bookingSelector";
+
 
 export default function BookingSection({
+  customers = [],
+  vehicles = [],
   openModal,
   setTrackingBooking,
   setPage,
   t
-}) {
-
-  const bookings = useSelector(state => state.booking.bookings || []);
-  const customers = useSelector(state => state.customer.customers || []);
-  const vehicles = useSelector(state => state.vehicle.vehicles || []);
-
-  const dispatch=useDispatch();
-
-  useEffect(() => {
-    dispatch(fetchBookings());
-    dispatch(fetchCustomers());
-    dispatch(fetchVehicles());
-  }, [dispatch]);
-
-
-  // 🎨 Status styling (clean + consistent)
-  const getStatusConfig = (status) => {
-    const s = status?.toLowerCase() || "";
-
-    if (s === "completed") {
-      return { label: "Delivered", bg: t.successBg, color: t.success };
-    }
-
-    if (s === "ongoing") {
-      return { label: "In Transit", bg: t.warningBg, color: t.warning };
-    }
-
-    if (s === "pending") {
-      return { label: "Assigned", bg: t.infoBg, color: t.info };
-    }
-
-    return { label: status, bg: t.surfaceAlt, color: t.textMuted };
+}) { 
+  const statusColor = (s) => {
+    const l = s?.toLowerCase() || "";
+    if (l.includes("delivered")) return { bg: t.successBg, color: t.success };
+    if (l.includes("transit")) return { bg: t.warningBg, color: t.warning };
+    return { bg: t.surfaceAlt, color: t.textMuted };
   };
 
-  return (
-    <div className="booking-section">
+  const formatDateTime = (dateString) => {
+    if (!dateString) return "";
 
-      {/* 🔹 HEADER */}
+    const date = new Date(dateString);
+
+    return date.toLocaleString("en-IN", {
+      dateStyle: "medium",
+      timeStyle: "short",
+    });
+  };
+
+  const dispatch= useDispatch();
+
+  const bookings= useSelector(selectBookings);
+
+  useEffect(()=>{
+    dispatch(fetchBookings());
+  }, [dispatch]);
+
+  return (
+    <div
+      className="booking-root"
+      style={{
+        "--surface": t.surface,
+        "--surface-alt": t.surfaceAlt,
+        "--border": t.border,
+        "--text": t.text,
+        "--text-muted": t.textMuted,
+        "--accent": t.accent
+      }}
+    >
+      {/* Header */}
       <div className="booking-header">
-        <div>
-          <h2 style={{ color: t.text }}>Bookings</h2>
-          <p className="booking-count" style={{ color: t.textMuted }}>
-            {bookings.length} active deliveries
-          </p>
-        </div>
+        <p className="booking-count">
+          {bookings.length} bookings total
+        </p>
 
         <button
-          onClick={() => setPage("booking-create")}
           className="btn-primary"
+          onClick={() => setPage("booking-create")}
         >
-          + New Booking
+          + Create Booking
         </button>
       </div>
 
-      {/* 🔹 EMPTY STATE */}
-      {bookings.length === 0 && (
-        <div className="empty-state" style={{ color: t.textMuted }}>
-          No bookings yet 🚚
-        </div>
-      )}
+      {/* Cards */}
+      {bookings.map((b) => {
+        const sc = statusColor(b.status);
+        const customer = customers?.find(
+          (c) => c.id === Number(b.customerId)
+        );
 
-      {/* 🔹 LIST */}
-      <div className="booking-list">
-        {bookings.map((b) => {
+        const vehicle = vehicles?.find(
+          (v) => v.id === Number(b.vehicleId)
+        );
 
-          const customer = customers.find(c => c.id === Number(b.customerId));
-          const vehicle = vehicles.find(v => v.id === Number(b.vehicleId));
-          const sc = getStatusConfig(b.status);
-
-          return (
-            <div
-              key={b.id}
-              className="booking-card"
-              style={{
-                background: t.surface,
-                border: `1px solid ${t.border}`
-              }}
-            >
-
-              {/* 🔸 TOP */}
-              <div className="booking-top">
-
-                <div>
-                  <div className="booking-id" style={{ color: t.accent }}>
-                    #{b.bookingId || b.id}
-                  </div>
-
-                  <div className="pickup-text" style={{ color: t.textMuted }}>
-                    📍 {b.pickupAddress}
-                  </div>
-                </div>
-
-                <div className="booking-actions">
-
-                  <span
-                    className="status-badge"
-                    style={{
-                      background: sc.bg,
-                      color: sc.color
-                    }}
-                  >
-                    {sc.label}
-                  </span>
-
-                  <button
-                    className="btn-track"
-                    style={{ background: t.accent }}
-                    onClick={() => {
-                      setTrackingBooking(b);
-                      setPage("tracking");
-                    }}
-                  >
-                    Track
-                  </button>
-
+        return (
+          <div key={b.id} className="booking-card">
+            {/* Top */}
+            <div className="booking-top">
+              <div>
+                <div className="booking-id">{b.bookingId}</div>
+                <div className="booking-address">
+                  Pickup: {b.pickupAddress}
                 </div>
               </div>
 
-              {/* 🔸 INFO GRID */}
-              <div className="booking-info">
-
-                <div className="info-item">
-                  <div className="label" style={{ color: t.textMuted }}>
-                    Customer
-                  </div>
-                  <div style={{ color: t.text }}>
-                    {customer?.name || `#${b.customerId}`}
-                  </div>
-                </div>
-
-                <div className="info-item">
-                  <div className="label" style={{ color: t.textMuted }}>
-                    Vehicle
-                  </div>
-                  <div style={{ color: t.text }}>
-                    {vehicle?.number || `#${b.vehicleId}`}
-                  </div>
-                </div>
-
-              </div>
-
-              {/* 🔸 PROGRESS */}
-              <div className="progress-block">
-
-                <div className="progress-top">
-                  <span style={{ color: t.textMuted }}>
-                    Progress
-                  </span>
-                  <span style={{ color: t.text }}>
-                    {Math.round(b.progress || 0)}%
-                  </span>
-                </div>
-
-                <div
-                  className="progress-bg"
-                  style={{ background: t.surfaceAlt }}
+              <div className="booking-actions">
+                <span
+                  className="status-badge"
+                  style={{
+                    background: sc.bg,
+                    color: sc.color,
+                  }}
                 >
-                  <div
-                    className="progress-fill"
-                    style={{
-                      width: `${b.progress || 0}%`,
-                      background: `linear-gradient(90deg, ${t.accent}, ${t.accentHover || t.accent})`
-                    }}
-                  />
-                </div>
+                  {b.status}
+                </span>
 
+                <button
+                  className="btn-track"
+                  onClick={() => {
+                    setTrackingBooking(b.id);
+                    setPage("tracking");
+                  }}
+                >
+                  Track
+                </button>
+              </div>
+            </div>
+
+            {/* Info */}
+            <div className="booking-grid">
+              <div className="booking-box">
+                <div className="booking-label">Customer</div>
+                <div style={{ color: "var(--text)" }}>
+                  {b.Customer?.name || "Unknown"}
+                </div>
               </div>
 
+              <div className="booking-box">
+                <div className="booking-label">Vehicle</div>
+                <div style={{ color: "var(--text)" }}>
+                  {b.VehicleDetails?.number || "Unknown"}
+                </div>
+              </div>
             </div>
-          );
-        })}
-      </div>
+
+            {/* Progress */}
+            <div className="progress-section">
+              <div className="progress-header">
+                <span>Progress</span>
+                <span>{b.progress}%</span>
+              </div>
+
+              <div className="progress-bar-bg">
+                <div
+                  className="progress-bar-fill"
+                  style={{ width: `${b.progress}%` }}
+                />
+              </div>
+            </div>
+
+            <div style={{ fontSize: 12, color: "var(--text-muted)", marginTop: 6 }}>
+              Created: {formatDateTime(b.createdAt)}
+            </div>
+          </div>
+        );
+      })}
     </div>
   );
 }

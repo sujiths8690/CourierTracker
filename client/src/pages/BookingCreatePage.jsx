@@ -1,9 +1,7 @@
-
-
 import { useState, useEffect, useMemo, useRef } from "react";
 import MapSection from "../components/MapSection";
 import { useDispatch, useSelector } from "react-redux";
-import { fetchNearbyVehicles, fetchVehicles } from "../redux/features/vehicle/vehicleActions";
+import { fetchNearbyVehicles } from "../redux/features/vehicle/vehicleActions";
 import { selectCustomers } from "../redux/features/customer/customerSelector";
 import { fetchCustomers } from "../redux/features/customer/customerActions";
 import { updateVehiclePosition } from "../redux/features/vehicle/vehicleSlice";
@@ -115,9 +113,11 @@ function statusClass(status = "") {
 }
 
 // ─── Main component ───────────────────────────────────────────────────────────
-export default function BookingCreatePage({ setPage, setTrackingBooking, t }) {
+export default function BookingCreatePage({ setPage, t }) {
   const dispatch       = useDispatch();
-  const nearbyVehicles = useSelector((state) => state.vehicle.vehicles);
+  const nearbyVehicles = useSelector(
+    (state) => state.vehicle.nearbyVehicles || []
+  );
   const customers = useSelector(selectCustomers);
   const [destinationRoute, setDestinationRoute] = useState([]);
   const [searchQuery, setSearchQuery] = useState("");
@@ -129,6 +129,7 @@ export default function BookingCreatePage({ setPage, setTrackingBooking, t }) {
   const [destinationRouteMeta, setDestinationRouteMeta] = useState(null);
   const [debouncedVehicles, setDebouncedVehicles] = useState([]);
 
+  const latestVehicleUpdates = useRef({});
 
   console.log("vehicles:", nearbyVehicles);
   console.log("vehicle sample:", nearbyVehicles[0]);
@@ -144,9 +145,6 @@ export default function BookingCreatePage({ setPage, setTrackingBooking, t }) {
 
     return 1; // default
   };
-  useEffect(() => {
-    dispatch(fetchVehicles()); // 🔥 ADD THIS
-  }, [dispatch]);
 
   useEffect(() => {
     const t = setTimeout(() => {
@@ -160,22 +158,42 @@ export default function BookingCreatePage({ setPage, setTrackingBooking, t }) {
     dispatch(fetchCustomers());
   },[dispatch]);
 
+    useEffect(() => {
+        const ws = new WebSocket("ws://192.168.1.84:3003");
 
-  // useEffect(() => {
-  //   const interval = setInterval(() => {
-  //     const updates = Object.values(latestVehicleUpdates.current);
+        ws.onopen = () => {
+            ws.send(JSON.stringify({
+            type: "SUBSCRIBE"
+            }));
+        };
 
-  //     updates.forEach((update) => {
-  //       dispatch(updateVehiclePosition(update));
-  //     });
+        ws.onmessage = (event) => {
+          const data = JSON.parse(event.data);
 
-  //     // clear buffer
-  //     latestVehicleUpdates.current = {};
+          if (data.type === "VEHICLE_LOCATION") {
+            // store latest update (don't dispatch immediately)
+            latestVehicleUpdates.current[data.vehicleId] = data;
+          }
+        };
 
-  //   }, 60000); 
+        return () => ws.close();
+    }, [dispatch]);
 
-  //   return () => clearInterval(interval);
-  // }, [dispatch]);
+  useEffect(() => {
+    const interval = setInterval(() => {
+      const updates = Object.values(latestVehicleUpdates.current);
+
+      updates.forEach((update) => {
+        dispatch(updateVehiclePosition(update));
+      });
+
+      // clear buffer
+      latestVehicleUpdates.current = {};
+
+    }, 60000); 
+
+    return () => clearInterval(interval);
+  }, [dispatch]);
 
   const formatArrivalTime = (minutes) => {
     if (!minutes) return "--";
@@ -235,8 +253,6 @@ export default function BookingCreatePage({ setPage, setTrackingBooking, t }) {
             pickupAddress: place.display_name,
         }));
 
-
-
         setSearchResults([]);
         setSearchQuery(place.display_name);
     };
@@ -251,6 +267,11 @@ export default function BookingCreatePage({ setPage, setTrackingBooking, t }) {
 
             setCurrentLocation({ lat, lng });
 
+            dispatch(fetchNearbyVehicles({
+                lat,
+                lng,
+                radius: 20
+            }));
 
             },
             () => {
@@ -258,6 +279,10 @@ export default function BookingCreatePage({ setPage, setTrackingBooking, t }) {
 
             setCurrentLocation(fallback);
 
+            dispatch(fetchNearbyVehicles({
+                ...fallback,
+                radius: 20
+            }));
             }
         );
         }, [dispatch]);
@@ -311,55 +336,6 @@ export default function BookingCreatePage({ setPage, setTrackingBooking, t }) {
       timeMin
     };
   });
-
-  const wsRef = useRef(null);
-
-  useEffect(() => {
-    const ws = new WebSocket("ws://192.168.1.84:3003");
-    wsRef.current = ws;
-
-    ws.onopen = () => {
-      console.log("✅ WS Connected");
-    };
-
-    ws.onmessage = (event) => {
-      const data = JSON.parse(event.data);
-
-      if (data.type === "VEHICLE_LOCATION") {
-        dispatch(updateVehiclePosition({
-          vehicleId: data.vehicleId,
-          lat: data.lat,
-          lng: data.lng
-        }));
-      }
-    };
-
-    return () => ws.close();
-  }, []);
-
-  useEffect(() => {
-    const ws = wsRef.current;
-
-    if (!ws) return;
-
-    const subscribe = () => {
-      nearbyVehicles.forEach((v) => {
-        ws.send(JSON.stringify({
-          type: "SUBSCRIBE_VEHICLE",
-          vehicleId: v.id
-        }));
-      });
-
-      console.log("📡 Subscribed:", nearbyVehicles.length);
-    };
-
-    if (ws.readyState === 1) {
-      subscribe();
-    } else {
-      ws.onopen = subscribe;
-    }
-
-  }, [nearbyVehicles]);
 
   // Inject CSS custom properties from the `t` theme object
   useThemeVars(rootEl, t);
@@ -487,29 +463,14 @@ export default function BookingCreatePage({ setPage, setTrackingBooking, t }) {
     try {
       setSubmitting(true);
 
-      const payload = {
-        ...form,
-        route: routeCoords // ✅ ADD THIS
-      };
+      const result = await dispatch(createBooking(form));
 
+      console.log("Submitting form:", form);
 
-      const result = await dispatch(createBooking(payload));
+      console.log("API result:", result);
 
       if (result.meta.requestStatus === "fulfilled") {
-        const createdBooking = result.payload?.booking;
-
-        console.log("Created booking:", createdBooking);
-
-        if (createdBooking?.id) {
-          // ✅ Set tracking booking
-          setTrackingBooking(createdBooking.id);
-
-          // ✅ Go to tracking page
-          setPage("tracking");
-        } else {
-          // fallback
-          setPage("dashboard");
-        }
+        setPage("dashboard");
       }
 
     } catch (err) {
@@ -799,15 +760,12 @@ export default function BookingCreatePage({ setPage, setTrackingBooking, t }) {
                 }
                 isCurrentLocation={!form.pickupLat}
                 onSelect={handleMapClick}
-                vehicles={vehiclesWithMeta
-                  .filter(v => v.lastLat && v.lastLng)
-                  .map(v => ({
-                    ...v,
-                    lat: v.lastLat,
-                    lng: v.lastLng,
-                    eta: v.timeMin
-                  }))
-                }
+                vehicles={vehiclesWithMeta.map(v => ({
+                  ...v,
+                  lat: v.lastLat,
+                  lng: v.lastLng,
+                  eta: v.timeMin 
+                }))}
                 showVehicles={true}
                 clickable={true}
                 route= {routeCoords}
@@ -855,7 +813,7 @@ export default function BookingCreatePage({ setPage, setTrackingBooking, t }) {
                       vehicleRouteMeta[form.vehicleId].distance
                     )
                   }}>
-                    {Math.round(vehicleRouteMeta[form.vehicleId].time)} min
+                    {formatDuration(vehicleRouteMeta[form.vehicleId].time)}
                   </div>
 
                   {/* KM + ARRIVAL */}
@@ -987,16 +945,16 @@ export default function BookingCreatePage({ setPage, setTrackingBooking, t }) {
                         </div>
 
                         <div className="bcp-vehicle-info">
-                          <p className="bcp-vehicle-meta">{v.type} · {v.users?.[0]?.name || "Unknown"}</p>
+                          <p className="bcp-vehicle-meta">{v.type} · {v.owner}</p>
                           {vehicleRouteMeta[v.id] ? (
                               <p style={{ fontSize: 12, color: "#007bff" }}>
                                 {vehicleRouteMeta[v.id].distance.toFixed(2)} km · 
-                                {Math.round(vehicleRouteMeta[v.id].time)} min
+                                {formatDuration(vehicleRouteMeta[v.id].time)}
                               </p>
                             ) : (
                               <p style={{ fontSize: 12, color: "#888" }}>
                                 {v.distance != null && v.timeMin != null
-                                  ? `${v.distance.toFixed(2)} km · ${Math.round(v.timeMin)} min`
+                                  ? `${v.distance.toFixed(2)} km · ${formatDuration(v.timeMin)}`
                                   : "Choose location"}
                               </p>
                             )}
