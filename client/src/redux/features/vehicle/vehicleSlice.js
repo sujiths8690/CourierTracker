@@ -28,6 +28,27 @@ const vehicleSlice = createSlice({
     clearErrorMessage: (state) => {
       state.error = null;
     },
+
+    // 🔥 THIS WAS MISSING
+    updateVehiclePosition: (state, action) => {
+      const { vehicleId, lat, lng } = action.payload;
+
+      // update main vehicle list
+      const vehicle = state.vehicles.find(v => v.id === vehicleId);
+      if (vehicle) {
+        vehicle.lastLat = lat;
+        vehicle.lastLng = lng;
+        vehicle.lastUpdated = new Date().toISOString();
+      }
+
+      // update nearby vehicles
+      const nearby = state.nearbyVehicles.find(v => v.id === vehicleId);
+      if (nearby) {
+        nearby.lastLat = lat;
+        nearby.lastLng = lng;
+        nearby.lastUpdated = new Date().toISOString();
+      }
+    }
   },
 
   extraReducers: (builder) => {
@@ -127,8 +148,10 @@ const vehicleSlice = createSlice({
       });
   },
 });
-
-export const { clearErrorMessage, clearSuccessMessage } =
-  vehicleSlice.actions;
+export const {
+  clearErrorMessage,
+  clearSuccessMessage,
+  updateVehiclePosition   // 🔥 ADD THIS
+} = vehicleSlice.actions;
 
 export default vehicleSlice.reducer;

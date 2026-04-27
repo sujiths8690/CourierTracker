@@ -2,11 +2,15 @@ import WebSocket, { WebSocketServer } from "ws";
 
 interface TrackingSocket extends WebSocket {
   bookingId?: number;
+  vehicleId?: number;
 }
 
 let wss: WebSocketServer;
 
+
 // 🔹 Initialize WebSocket Server
+let flushTimer: NodeJS.Timeout | null = null;
+
 export const initTrackingSocket = (server: WebSocketServer) => {
   wss = server;
 
@@ -17,7 +21,6 @@ export const initTrackingSocket = (server: WebSocketServer) => {
       try {
         const message = JSON.parse(data.toString());
 
-        // 🟢 Subscribe to booking
         if (message.type === "SUBSCRIBE") {
           ws.bookingId = message.bookingId;
 
@@ -27,12 +30,19 @@ export const initTrackingSocket = (server: WebSocketServer) => {
           }));
         }
 
-        // 🟢 Keep alive
+        if (message.type === "SUBSCRIBE_VEHICLE") {
+          ws.vehicleId = message.vehicleId;
+
+          ws.send(JSON.stringify({
+            type: "VEHICLE_SUBSCRIBED",
+            vehicleId: message.vehicleId
+          }));
+        }
+
         if (message.type === "PING") {
           ws.send(JSON.stringify({ type: "PONG" }));
         }
-
-      } catch (err) {
+      } catch {
         console.log("Invalid WS message");
       }
     });
@@ -44,16 +54,16 @@ export const initTrackingSocket = (server: WebSocketServer) => {
 };
 
 
-export const sendLocationUpdate = (
-  bookingId: number,
+export const sendVehicleLocationUpdate = (
+  vehicleId: number,
   lat: number,
   lng: number
 ) => {
   if (!wss) return;
 
   const message = JSON.stringify({
-    type: "LOCATION_UPDATE",
-    bookingId,
+    type: "VEHICLE_LOCATION",
+    vehicleId,
     lat,
     lng
   });
@@ -61,10 +71,7 @@ export const sendLocationUpdate = (
   wss.clients.forEach((client) => {
     const ws = client as TrackingSocket;
 
-    if (
-      ws.readyState === WebSocket.OPEN &&
-      ws.bookingId === bookingId
-    ) {
+    if (ws.readyState === WebSocket.OPEN) {
       ws.send(message);
     }
   });

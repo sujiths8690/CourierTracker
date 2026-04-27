@@ -1,92 +1,116 @@
 import MapSection from "../components/MapSection";
+import { useState, useEffect } from "react";
 
 export default function VehicleMapPage({ vehicle, setPage, t }) {
-  
+  const [liveVehicle, setLiveVehicle] = useState(vehicle);
+
+  useEffect(() => {
+    const ws = new WebSocket("ws://192.168.1.84:3003");
+
+    ws.onopen = () => {
+      console.log("✅ WS CONNECTED");
+      ws.send(JSON.stringify({
+        type: "SUBSCRIBE_VEHICLE",
+        vehicleId: vehicle.id   // ✅ THIS WAS MISSING
+      }));
+    };
+
+    ws.onmessage = (event) => {
+      console.log("📡 RECEIVED:", event.data);
+      const data = JSON.parse(event.data);
+
+      if (
+        data.type === "VEHICLE_LOCATION" &&
+        data.vehicleId === vehicle.id   // ✅ only update this vehicle
+      ) {
+        setLiveVehicle(prev => ({
+          ...prev,
+          lastLat: data.lat,
+          lastLng: data.lng
+        }));
+      }
+    };
+
+    ws.onerror = (err) => console.log("❌ WS ERROR", err);
+
+    ws.onclose = () => console.log("⚠️ WS CLOSED");
+
+    return () => ws.close();
+  }, [vehicle.id]);
+
   const hasLocation =
-    vehicle?.lastLat !== null && vehicle?.lastLng !== null;
+    liveVehicle?.lastLat != null && liveVehicle?.lastLng != null;
 
   const position = hasLocation
-    ? [vehicle.lastLat, vehicle.lastLng]
-    : [10, 76]; // fallback
+    ? [liveVehicle.lastLat, liveVehicle.lastLng]
+    : [10, 76];
 
   return (
-    <div
-      style={{
-        minHeight: "100vh",
-        background: t.bg,
-        padding: 20
-      }}
-    >
+    <div className="vmp-root">
+
       {/* HEADER */}
-      <div
-        style={{
-          display: "flex",
-          justifyContent: "space-between",
-          alignItems: "center",
-          marginBottom: 20
-        }}
-      >
+      <div className="vmp-header">
         <button
+          className="vmp-back-btn"
           onClick={() => setPage("app")}
-          style={{
-            padding: "8px 14px",
-            borderRadius: 8,
-            border: `1px solid ${t.border}`,
-            background: "transparent",
-            color: t.text,
-            cursor: "pointer"
-          }}
         >
           ← Back
         </button>
 
-        <h3 style={{ color: t.text }}>
-          Vehicle Location
-        </h3>
+        <h2 className="vmp-title">Vehicle Location</h2>
 
-        <div style={{ color: t.accent, fontWeight: 600 }}>
+        <div className="vmp-vehicle-id">
           {vehicle?.number}
         </div>
       </div>
 
-      {/* INFO CARD */}
-      <div
-        style={{
-          background: t.surface,
-          border: `1px solid ${t.border}`,
-          borderRadius: 12,
-          padding: 16,
-          marginBottom: 16
-        }}
-      >
-        <div style={{ fontWeight: 600, fontSize: 15 }}>
-          {vehicle?.number}
+      {/* MAIN */}
+      <div className="vmp-layout">
+
+        {/* LEFT PANEL */}
+        <div className="vmp-left">
+
+          <div className="vmp-card">
+            <div className="vmp-card-title">
+              {vehicle?.number}
+            </div>
+
+            <div className="vmp-meta">
+              {vehicle?.type} · {vehicle?.owner}
+            </div>
+
+            <div className="vmp-price">
+              ₹{vehicle?.pricePerKm ?? "--"} / km
+            </div>
+
+            <div className={`vmp-status ${hasLocation ? "live" : "offline"}`}>
+              {hasLocation
+                ? "● Live tracking active"
+                : "● Location not available"}
+            </div>
+          </div>
+
         </div>
 
-        <div style={{ fontSize: 13, color: t.textMuted }}>
-          {vehicle?.type} · {vehicle?.owner}
+        {/* MAP */}
+        <div className="vmp-map">
+          <MapSection
+            pos={position}
+            vehicles={
+              hasLocation
+                ? [{
+                    id: liveVehicle.id,
+                    lat: liveVehicle.lastLat,
+                    lng: liveVehicle.lastLng,
+                    number: liveVehicle.number,
+                    pricePerKm: liveVehicle.pricePerKm
+                  }]
+                : []
+            }
+            showVehicles={true}
+          />
         </div>
 
-        <div style={{ marginTop: 6, fontSize: 13 }}>
-          💰 ₹{vehicle?.pricePerKm ?? "--"} / km
-        </div>
-
-        <div style={{ marginTop: 6, fontSize: 12, color: t.textMuted }}>
-          {hasLocation
-            ? "📍 Live location available"
-            : "⚠️ Location not available"}
-        </div>
-      </div>
-
-      {/* MAP */}
-      <div
-        style={{
-          height: "500px",
-          borderRadius: 12,
-          overflow: "hidden"
-        }}
-      >
-        <MapSection pos={position} />
       </div>
     </div>
   );

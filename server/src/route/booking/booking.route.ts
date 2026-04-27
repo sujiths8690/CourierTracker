@@ -6,6 +6,7 @@ const router = Router();
 
 router.post("/create", authenticate, bookingController.createBooking);
 router.put("/update/:id", authenticate, bookingController.updateBooking);
-router.get("/:id", authenticate, bookingController.getBooking);
+router.get("/:id", authenticate, bookingController.getBookingById);
+router.get("/", bookingController.getAllBookingsController);
 
 export default router;

@@ -1,5 +1,5 @@
 import { createAsyncThunk } from "@reduxjs/toolkit";
-import API from "../../../common/api";
+import api from "../../../common/api";
 
 // ➕ CREATE BOOKING
 export const createBooking = createAsyncThunk(
@@ -16,20 +16,23 @@ export const createBooking = createAsyncThunk(
   }
 );
 
-// 📄 GET BOOKING
-export const fetchBooking = createAsyncThunk(
-  "booking/fetch",
-  async (id, thunkAPI) => {
+export const fetchBookings = createAsyncThunk(
+  "booking/fetchAll",
+  async (_, thunkAPI) => {
     try {
-      const response = await API.get(`/booking/${id}`);
-      return response.data;
+      const response = await api.get("/booking");
+
+      // 🔥 IMPORTANT
+      return response.data.data;
+
     } catch (error) {
       return thunkAPI.rejectWithValue(
-        error.response?.data?.message || "Fetch booking failed"
+        error.response?.data?.message || "Fetch bookings failed"
       );
     }
   }
 );
+
 
 /**
  * 🔍 FETCH BOOKING BY ID
@@ -38,7 +41,7 @@ export const fetchBookingById = createAsyncThunk(
   "booking/fetchOne",
   async (id, thunkAPI) => {
     try {
-      const response = await API.get(`/booking/${id}`);
+      const response = await api.get(`/booking/${id}`);
 
       // 🔥 assuming backend returns: { message, data }
       return response.data.data;
@@ -56,7 +59,7 @@ export const updateBooking = createAsyncThunk(
   "booking/update",
   async ({ id, data }, thunkAPI) => {
     try {
-      const response = await API.put(`/booking/update/${id}`, data);
+      const response = await api.put(`/booking/update/${id}`, data);
       return response.data; // { updated }
     } catch (error) {
       return thunkAPI.rejectWithValue(

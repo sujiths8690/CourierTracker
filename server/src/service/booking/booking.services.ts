@@ -164,7 +164,7 @@ export const updateBooking = async (bookingId: number, data: any) => {
   }
 };
 
-export const getBooking = async (bookingId: number) => {
+export const getBookingById = async (bookingId: number) => {
   try {
     const booking = await prisma.vehicleBooking.findUnique({
       where: { id: bookingId },
@@ -180,6 +180,29 @@ export const getBooking = async (bookingId: number) => {
 
   } catch (err: any) {
     console.error("Error fetching booking", err);
+    throw err;
+  }
+};
+
+export const getAllBookings = async () => {
+  try {
+    const bookings = await prisma.vehicleBooking.findMany({
+      where: {
+        isActive: true
+      },
+      orderBy: {
+        createdAt: "desc"
+      },
+      include: {
+        Customer: true,
+        VehicleDetails: true
+      }
+    });
+
+    return bookings;
+
+  } catch (err: any) {
+    console.error("Error fetching bookings", err);
     throw err;
   }
 };

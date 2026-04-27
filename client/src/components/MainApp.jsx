@@ -164,9 +164,6 @@ export default function MainApp(props) {
 
         {activeSection === "booking" && (
           <BookingSection
-            bookings={bookings}
-            customers={customers}
-            vehicles={vehicles}
             openModal={openModal}
             setTrackingBooking={(id) => {
               setTrackingVehicle(id);

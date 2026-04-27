@@ -12,6 +12,7 @@ import vehicleRoutes from "./route/vehicle/vehicle.routes";
 import trackingRoutes from "./route/tracking/tracking.routes";
 import customerRoutes from "./route/customer/customer.route";
 import dashboardRoutes from "./route/dashboard/dashboard.routes";
+import { startVehicleSimulation } from "./utils/vehicleSimulation";
 
 dotenv.config();
 
@@ -51,4 +52,6 @@ const port = Number(process.env.PORT) || 3003;
 
 server.listen(port, "0.0.0.0", () => {
   console.log(`Server running on ${port}`);
+
+  startVehicleSimulation();
 });

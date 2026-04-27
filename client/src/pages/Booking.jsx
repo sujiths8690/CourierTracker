@@ -1,14 +1,30 @@
 // components/BookingSection.jsx
 
+import { useEffect } from "react";
+import { useDispatch, useSelector } from "react-redux";
+import { fetchBookings } from "../redux/features/booking/bookingActions";
+import { fetchCustomers } from "../redux/features/customer/customerActions";
+import { fetchVehicles } from "../redux/features/vehicle/vehicleActions";
+
 export default function BookingSection({
-  bookings,
-  customers,
-  vehicles,
   openModal,
   setTrackingBooking,
   setPage,
   t
 }) {
+
+  const bookings = useSelector(state => state.booking.bookings || []);
+  const customers = useSelector(state => state.customer.customers || []);
+  const vehicles = useSelector(state => state.vehicle.vehicles || []);
+
+  const dispatch=useDispatch();
+
+  useEffect(() => {
+    dispatch(fetchBookings());
+    dispatch(fetchCustomers());
+    dispatch(fetchVehicles());
+  }, [dispatch]);
+
 
   // 🎨 Status styling (clean + consistent)
   const getStatusConfig = (status) => {
@@ -43,8 +59,7 @@ export default function BookingSection({
 
         <button
           onClick={() => setPage("booking-create")}
-          className="create-booking-btn"
-          style={{ background: t.accent }}
+          className="btn-primary"
         >
           + New Booking
         </button>
@@ -101,7 +116,7 @@ export default function BookingSection({
                   </span>
 
                   <button
-                    className="track-btn"
+                    className="btn-track"
                     style={{ background: t.accent }}
                     onClick={() => {
                       setTrackingBooking(b);

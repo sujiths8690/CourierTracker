@@ -46,7 +46,7 @@ export default function TruckMap({ booking, t }) {
   useEffect(() => {
     if (!booking?.id) return;
 
-    const ws = new WebSocket("ws://localhost:3000");
+    const ws = new WebSocket("ws://192.168.1.84:3003");
 
     ws.onopen = () => {
       console.log("WS connected");

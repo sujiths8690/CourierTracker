@@ -1,23 +1,10 @@
 /* components/Dashboard.css */
-:root {
-  --surface: #ffffff;
-  --surface-alt: #f5f5f5;
-  --border: #e5e5e5;
-  --text: #1f2937;
-  --text-muted: #6b7280;
-  --accent: #3b82f6;
-  --accent-light: #dbeafe;
-  /* Add dark mode variables too */
-}
 
-[data-theme="dark"] {
-  --surface: #1f2937;
-  --border: #374151;
-  --text: #f3f4f6;
-  --text-muted: #9ca3af;
-  --accent: #60a5fa;
-  --accent-light: #1e40af;
-}
+/* .dashboard-container {
+  Main wrapper - no extra styles needed usually
+} */
+ @import url('https://fonts.googleapis.com/css2?family=Sora:wght@300;400;500;600;700&family=Playfair+Display:ital,wght@0,700;1,600&display=swap');
+
 
 .analytics-grid {
   display: grid;
@@ -172,12 +159,7 @@
   font-size: 13px;
 }
 
-/* Customer Section */
-
 /* components/CustomerSection.css */
-
-/* components/CustomerSection.css */
-
 
 .customer-header {
   display: flex;
@@ -287,105 +269,119 @@
   background: #fee2e2;
 }
 
-/* Booking section */
-
 /* components/BookingSection.css */
 
+/* Container */
+/* Root container will receive theme variables */
+.booking-root {
+  min-height: 100%;
+}
+
+/* Header */
 .booking-header {
   display: flex;
   justify-content: space-between;
-  align-items: center;
   margin-bottom: 1.25rem;
 }
 
 .booking-count {
-  color: var(--text-muted);
-  margin: 0;
   font-size: 14px;
+  color: var(--text-muted);
 }
 
-.create-booking-btn {
+/* Buttons */
+.btn-primary {
+  padding: 10px 20px;
+  border-radius: 12px;
+  border: none;
+  cursor: pointer;
+  font-weight: 600;
+
+  background: var(--accent);
+  color: #000000;
+
+  /* 🔥 ADD THIS */
+  box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+  border: 1px solid rgba(0,0,0,0.05);
+
+  transition: all 0.2s ease;
+}
+
+.btn-primary:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 8px 20px rgba(0,0,0,0.2);
+}
+
+.btn-track {
+  padding: 7px 14px;
+  border-radius: 8px;
+  border: none;
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: 600;
   background: var(--accent);
   color: #fff;
-  border: none;
-  padding: 10px 20px;
-  border-radius: 10px;
-  cursor: pointer;
-  font-size: 14px;
-  font-weight: 500;
 }
 
+/* Card */
 .booking-card {
-  background: var(--surface);
   border-radius: 16px;
   padding: 1.25rem;
-  border: 1px solid var(--border);
   margin-bottom: 12px;
+  background: var(--surface);
+  border: 1px solid var(--border);
 }
 
-.booking-header-row {
+/* Top */
+.booking-top {
   display: flex;
   justify-content: space-between;
   margin-bottom: 12px;
-  align-items: flex-start;
 }
 
 .booking-id {
   font-weight: 700;
   color: var(--accent);
-  font-size: 15px;
 }
 
-.pickup-info {
-  color: var(--text-muted);
+.booking-address {
   font-size: 13px;
-  margin-top: 4px;
+  color: var(--text-muted);
 }
 
+/* Actions */
 .booking-actions {
   display: flex;
   gap: 8px;
-  flex-shrink: 0;
 }
 
 .status-badge {
   padding: 4px 12px;
-  border-radius: 9999px;
+  border-radius: 99px;
   font-size: 12px;
-  font-weight: 600;
-  white-space: nowrap;
-}
-
-.track-btn {
-  background: var(--accent);
-  color: #fff;
-  border: none;
-  padding: 7px 14px;
-  border-radius: 8px;
-  cursor: pointer;
-  font-size: 13px;
   font-weight: 500;
 }
 
-.info-grid {
+/* Grid */
+.booking-grid {
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 8px;
-  margin-bottom: 12px;
 }
 
-.info-box {
-  background: var(--surface-alt);
+.booking-box {
   padding: 10px 14px;
   border-radius: 10px;
+  background: var(--surface-alt);
 }
 
-.info-label {
+.booking-label {
   font-size: 10px;
-  color: var(--text-muted);
   margin-bottom: 2px;
+  color: var(--text-muted);
 }
 
+/* Progress */
 .progress-section {
   margin-top: 12px;
 }
@@ -394,24 +390,24 @@
   display: flex;
   justify-content: space-between;
   font-size: 12px;
-  color: var(--text-muted);
   margin-bottom: 4px;
+  color: var(--text-muted);
 }
 
-.progress-bar-container {
-  background: var(--surface-alt);
+.progress-bar-bg {
   height: 6px;
   border-radius: 99px;
   overflow: hidden;
+  background: var(--surface-alt);
 }
 
-.progress-bar {
+.progress-bar-fill {
   height: 100%;
-  background: var(--accent);
   border-radius: 99px;
+  background: var(--accent);
+  transition: width 0.4s ease;
 }
 
-/* Auth page */
 /* pages/AuthPage.css */
 
 .auth-page {
@@ -521,9 +517,8 @@
   margin: 1rem auto 0;
 }
 
-/* Sidebar */
-
 /* components/Sidebar.css */
+
 
 .sidebar-overlay {
   position: fixed;
@@ -710,65 +705,240 @@
   font-family: 'Sora', sans-serif;
 }
 
-/* BookingCreatePage.css */
 
-.booking-create-page {
+/* Container */
+.tracking-page {
   min-height: 100vh;
-  background: var(--bg);
-  font-family: 'Sora', sans-serif;
-  padding: 24px 20px 60px;
+  padding: 24px;
 }
 
-/* Top Bar */
-.top-bar {
-  max-width: 780px;
-  margin: 0 auto 28px;
+.tracking-wrapper {
+  max-width: 90%;
+  margin: 0 auto;
+}
+
+/* Header */
+.tracking-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 1.5rem;
+}
+
+.tracking-back-btn {
+  padding: 8px 16px;
+  font-size: 13px;
+  border-radius: 8px;
+  cursor: pointer;
+  background: transparent;
+}
+
+.tracking-title {
+  font-family: 'Playfair Display', serif;
+  font-size: 24px;
+}
+
+.tracking-id {
+  margin-left: auto;
+  font-weight: 600;
+}
+
+/* Cards */
+.card {
+  border-radius: 16px;
+  padding: 1.5rem;
+  margin-top: 16px;
+}
+
+/* Progress */
+.progress-header {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 1rem;
+}
+
+.progress-bar-bg {
+  border-radius: 99px;
+  height: 12px;
+  overflow: hidden;
+  margin-bottom: 1.5rem;
+}
+
+.progress-bar-fill {
+  height: 100%;
+  border-radius: 99px;
+  transition: width 0.5s ease;
+}
+
+/* Info Grid */
+.info-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 12px;
+}
+
+.info-box {
+  border-radius: 12px;
+  padding: 12px;
+  text-align: center;
+}
+
+.info-label {
+  font-size: 11px;
+}
+
+.info-value {
+  font-weight: 600;
+  font-size: 14px;
+}
+
+/* Milestones */
+.milestone-title {
+  font-size: 13px;
+  margin-bottom: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+}
+
+.milestone-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 0;
+}
+
+.milestone-circle {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.milestone-text {
+  font-size: 14px;
+}
+
+.milestone-active {
+  font-size: 11px;
+  margin-top: 2px;
+  animation: pulse 2s infinite;
+}
+
+/* Divider */
+.border-bottom {
+  border-bottom: 1px solid;
+}
+
+/* Animation */
+@keyframes pulse {
+  0%,100% { opacity: 1; }
+  50% { opacity: 0.5; }
+}
+
+/* BookingCreatePage.css */
+
+/* ═══════════════════════════════════════════════════════════════
+   BookingCreatePage.css
+   CourierFlow — Booking Create Page Styles
+   Fonts: Sora (body) + Playfair Display (headings)
+   Theme tokens come from the `t` prop (light/dark) via CSS custom
+   properties set on .bcp-root at runtime. See BookingCreatePage.jsx.
+═══════════════════════════════════════════════════════════════ */
+
+/* ── Keyframe Animations ─────────────────────────────────────── */
+@keyframes bcp-fadeIn {
+  from { opacity: 0; transform: translateY(8px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes bcp-pulse {
+  0%, 100% { opacity: 1; }
+  50%       { opacity: 0.4; }
+}
+
+@keyframes bcp-spin {
+  from { transform: rotate(0deg); }
+  to   { transform: rotate(360deg); }
+}
+
+/* ── Root wrapper ────────────────────────────────────────────── */
+.bcp-root {
+  min-height: 100vh;
+  background: var(--bcp-bg);
+  font-family: 'Sora', sans-serif;
+  padding: 24px 20px 60px;
+  box-sizing: border-box;
+  color: var(--bcp-text);
+}
+
+/* ── Inner max-width container ───────────────────────────────── */
+.bcp-inner {
+  max-width: 90%;
+  margin: 0 auto;
+}
+
+/* ── Top bar ─────────────────────────────────────────────────── */
+.bcp-topbar {
   display: flex;
   align-items: center;
   gap: 14px;
+  margin-bottom: 28px;
 }
 
-.back-button {
+.bcp-back-btn {
   display: flex;
   align-items: center;
   gap: 6px;
-  background: var(--surface);
-  border: 1px solid var(--border);
-  color: var(--text);
+  background: var(--bcp-surface);
+  border: 1px solid var(--bcp-border);
+  color: var(--bcp-text);
   padding: 8px 16px;
   border-radius: 10px;
   cursor: pointer;
   font-size: 13px;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+  font-family: 'Sora', sans-serif;
+  box-shadow: var(--bcp-shadow);
+  transition: background 0.18s, transform 0.1s;
+  white-space: nowrap;
+  flex-shrink: 0;
 }
 
-.page-title {
+.bcp-back-btn:hover {
+  background: var(--bcp-surface-alt);
+}
+
+.bcp-back-btn:active {
+  transform: scale(0.97);
+}
+
+.bcp-page-title {
   font-family: 'Playfair Display', serif;
   font-size: 26px;
   font-weight: 700;
-  color: var(--text);
+  color: var(--bcp-text);
   letter-spacing: -0.5px;
   line-height: 1;
+  margin: 0 0 4px;
 }
 
-.page-subtitle {
+.bcp-page-subtitle {
   font-size: 13px;
-  color: var(--text-muted);
-  margin-top: 4px;
+  color: var(--bcp-text-muted);
+  margin: 0;
 }
 
-/* Step Indicator */
-.step-container {
-  max-width: 780px;
-  margin: 0 auto 28px;
-}
-
-.step-wrapper {
+/* ── Step indicator ──────────────────────────────────────────── */
+.bcp-steps {
   display: flex;
   align-items: center;
+  margin-bottom: 28px;
 }
 
-.step-dot {
+.bcp-step-dot-wrap {
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -776,7 +946,7 @@
   min-width: 64px;
 }
 
-.step-circle {
+.bcp-step-circle {
   width: 32px;
   height: 32px;
   border-radius: 50%;
@@ -785,91 +955,167 @@
   justify-content: center;
   font-size: 13px;
   font-weight: 700;
-  background: var(--surface-alt);
-  color: var(--text-muted);
+  font-family: 'Sora', sans-serif;
   border: 2px solid transparent;
-  transition: all 0.3s;
+  transition: background 0.3s, border-color 0.3s, box-shadow 0.3s, color 0.3s;
+  background: var(--bcp-surface-alt);
+  color: var(--bcp-text-muted);
 }
 
-.step-circle.active {
-  background: var(--accent);
-  color: white;
-  border: 2px solid var(--accent);
-  box-shadow: 0 0 0 4px rgba(255, 107, 0, 0.2);
+.bcp-step-circle.is-active {
+  background: var(--bcp-accent);
+  color: #fff;
+  border-color: var(--bcp-accent);
+  box-shadow: 0 0 0 4px var(--bcp-accent-light);
 }
 
-.step-circle.done {
-  background: var(--success);
-  color: white;
+.bcp-step-circle.is-done {
+  background: var(--bcp-success);
+  color: #fff;
+  border-color: var(--bcp-success);
 }
 
-.step-label {
+.bcp-step-label {
   font-size: 11px;
-  color: var(--text-muted);
   font-weight: 400;
+  font-family: 'Sora', sans-serif;
   white-space: nowrap;
+  color: var(--bcp-text-muted);
+  transition: color 0.3s;
 }
 
-.step-label.active {
-  color: var(--accent);
-  font-weight: 600;
-}
+.bcp-step-label.is-active { color: var(--bcp-accent);  font-weight: 600; }
+.bcp-step-label.is-done   { color: var(--bcp-success); }
 
-.step-label.done {
-  color: var(--success);
-}
-
-.step-line {
+.bcp-step-line {
   flex: 1;
   height: 2px;
-  background: var(--border);
-  margin-bottom: 22px;
   border-radius: 2px;
+  background: var(--bcp-border);
+  margin-bottom: 22px;
   transition: background 0.4s;
 }
 
-.step-line.done {
-  background: var(--success);
+.bcp-step-line.is-done {
+  background: var(--bcp-success);
 }
 
-/* Cards */
-.card {
-  background: var(--surface);
+@media (min-width: 1024px) {
+  .bcp-cards {
+    display: grid;
+    grid-template-columns: minmax(0, 1.6fr) minmax(420px, 1fr);
+    gap: 18px;
+    align-items: start;
+  }
+
+  /* LEFT COLUMN */
+  .bcp-card:nth-child(1),
+  .bcp-card:nth-child(2) {
+    grid-column: 1;
+  }
+
+  /* LEFT column spacing */
+  .bcp-card:nth-child(2) {
+    margin-top: 18px;
+  }
+
+  /* RIGHT column spacing */
+  .bcp-card.is-summary {
+    margin-top: 18px;
+  }
+
+  /* RIGHT COLUMN */
+  .bcp-card:nth-child(3),
+  .bcp-card.is-summary {
+    grid-column: 2;
+  }
+}
+
+/* ── Base card ───────────────────────────────────────────────── */
+.bcp-card {
+  background: var(--bcp-surface);
   border-radius: 18px;
-  border: 1px solid var(--border);
-  box-shadow: 0 4px 20px rgba(0,0,0,0.06);
+  border: 1px solid var(--bcp-border);
+  box-shadow: var(--bcp-shadow);
   overflow: hidden;
 }
 
-.customer-card,
-.pickup-card,
-.vehicle-card,
-.summary-card {
-  margin-bottom: 18px;
+/* ── Card header row ─────────────────────────────────────────── */
+.bcp-card-header {
+  padding: 20px 22px 0;
+  display: flex;
+  align-items: center;
+  gap: 10px;
 }
 
-/* Add more specific styles for each section... */
-
-.summary-card {
-  border: 1.5px solid var(--accent) !important;
-  background: var(--accent-light) !important;
-  animation: fadeIn 0.3s ease;
+.bcp-card-icon {
+  width: 34px;
+  height: 34px;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
 }
 
-/* Buttons, Inputs, etc. */
-input, select {
+.bcp-card-icon.icon-customer  { background: var(--bcp-accent-light); }
+.bcp-card-icon.icon-pickup    { background: var(--bcp-info-bg); }
+.bcp-card-icon.icon-vehicle   { background: var(--bcp-warning-bg); }
+
+.bcp-card-title {
+  font-weight: 600;
+  font-size: 15px;
+  color: var(--bcp-text);
+  margin: 0;
+}
+
+.bcp-card-header-right {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+/* ── Card body ───────────────────────────────────────────────── */
+.bcp-card-body {
+  padding: 16px 22px 22px;
+}
+
+/* ── Section micro-label ─────────────────────────────────────── */
+.bcp-section-label {
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.9px;
+  text-transform: uppercase;
+  color: var(--bcp-text-muted);
+  font-family: 'Sora', sans-serif;
+  margin-bottom: 10px;
+}
+
+/* ── Form controls ───────────────────────────────────────────── */
+.bcp-input,
+.bcp-select {
   width: 100%;
   padding: 11px 14px;
   border-radius: 12px;
-  border: 1.5px solid var(--border);
-  background: var(--input-bg, #fff);
-  color: var(--text);
+  border: 1.5px solid var(--bcp-border);
+  background: var(--bcp-input-bg);
+  color: var(--bcp-text);
   font-size: 14px;
   font-family: 'Sora', sans-serif;
   outline: none;
+  transition: border-color 0.2s;
+  box-sizing: border-box;
 }
 
-select {
+.bcp-input:focus,
+.bcp-select:focus {
+  border-color: var(--bcp-accent);
+}
+
+.bcp-select {
+  appearance: none;
+  -webkit-appearance: none;
   cursor: pointer;
   background-image: url("data:image/svg+xml,%3Csvg width='12' height='8' viewBox='0 0 12 8' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%23888780' stroke-width='1.5' stroke-linecap='round'/%3E%3C/svg%3E");
   background-repeat: no-repeat;
@@ -877,252 +1123,923 @@ select {
   padding-right: 36px;
 }
 
-/* Animations */
-@keyframes fadeIn {
-  from { opacity: 0; transform: translateY(8px); }
-  to { opacity: 1; transform: translateY(0); }
+.bcp-select option {
+  background: var(--bcp-surface);
+  color: var(--bcp-text);
 }
 
-@keyframes pulse {
-  0%, 100% { opacity: 1; }
-  50% { opacity: 0.4; }
-}
-
-@keyframes spin {
-  from { transform: rotate(0deg); }
-  to { transform: rotate(360deg); }
-}
-
-/* 🔵 Pickup Marker */
-.pickup-dot {
-  width: 14px;
-  height: 14px;
-  background: #3b82f6;
-  border-radius: 50%;
-  border: 3px solid white;
-  box-shadow: 0 0 10px rgba(0,0,0,0.3);
-}
-
-/* 🚚 Vehicle Marker */
-.vehicle-wrapper {
-  position: relative;
-  background: white;
-  border-radius: 50%;
-  padding: 6px;
-  box-shadow: 0 4px 10px rgba(0,0,0,0.25);
-  font-size: 18px;
-}
-
-.vehicle-price {
-  position: absolute;
-  top: -8px;
-  left: 50%;
-  transform: translateX(-50%);
-  background: #22c55e;
-  color: white;
-  font-size: 10px;
-  padding: 2px 6px;
-  border-radius: 6px;
-  font-weight: 600;
-}
-
-.card-header {
-  padding: 14px 18px;
-  font-weight: 600;
-  border-bottom: 1px solid var(--border);
-}
-
-.pickup-address-box {
-  padding: 12px;
-  font-size: 13px;
-  color: var(--text);
-  background: var(--surface-alt);
-}
-
-/* VEHICLE LIST */
-.vehicle-list {
+/* ── Customer preview panel ──────────────────────────────────── */
+.bcp-customer-preview {
+  margin-top: 14px;
+  padding: 14px 16px;
+  background: var(--bcp-surface-alt);
+  border-radius: 12px;
   display: flex;
-  flex-direction: column;
+  gap: 14px;
+  align-items: flex-start;
 }
 
-.vehicle-item {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 12px 16px;
-  border-bottom: 1px solid var(--border);
-  cursor: pointer;
-  transition: 0.2s;
-}
-
-.vehicle-item:hover {
-  background: var(--surface-alt);
-}
-
-.vehicle-item.selected {
-  background: var(--accent-light);
-  border-left: 4px solid var(--accent);
-}
-
-.vehicle-left {
+.bcp-avatar {
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  background: var(--bcp-accent-light);
   display: flex;
   align-items: center;
-  gap: 10px;
+  justify-content: center;
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--bcp-accent);
+  flex-shrink: 0;
+  font-family: 'Sora', sans-serif;
 }
 
-.vehicle-name {
+.bcp-avatar.sm {
+  width: 28px;
+  height: 28px;
+  font-size: 12px;
+}
+
+.bcp-customer-name {
   font-weight: 600;
   font-size: 14px;
+  color: var(--bcp-text);
+  margin: 0 0 4px;
 }
 
-.vehicle-type {
-  font-size: 12px;
-  color: var(--text-muted);
-}
-
-.vehicle-right {
-  font-weight: 600;
-  color: var(--accent);
-}
-
-/* SUMMARY */
-.summary-row {
+.bcp-customer-address {
   display: flex;
-  justify-content: space-between;
-  padding: 8px 0;
+  align-items: center;
+  gap: 5px;
+  font-size: 12px;
+  color: var(--bcp-text-muted);
+  margin: 0 0 3px;
+}
+
+.bcp-customer-coords {
+  font-size: 11px;
+  color: var(--bcp-text-muted);
+  margin: 0;
+}
+
+/* ── Pickup hint row ─────────────────────────────────────────── */
+.bcp-pickup-hint {
+  padding: 14px 22px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
   font-size: 13px;
+  color: var(--bcp-text-muted);
 }
 
-.confirm-btn {
-  width: 100%;
-  margin-top: 12px;
-  padding: 12px;
-  border: none;
-  border-radius: 12px;
-  background: var(--accent);
-  color: white;
-  font-weight: 600;
-  cursor: pointer;
+.bcp-pickup-hint.has-value {
+  color: var(--bcp-text);
 }
 
-.booking-section {
+/* ── Map wrapper ─────────────────────────────────────────────── */
+.bcp-map-wrap {
+  height: 360px;
+  border-top: 1px solid var(--bcp-border);
+}
+
+/* ── Map status bar (pulsing) ────────────────────────────────── */
+.bcp-map-status {
+  padding: 14px 22px;
+  border-top: 1px solid var(--bcp-border);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--bcp-success);
+}
+
+.bcp-pulse-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--bcp-success);
+  animation: bcp-pulse 2s infinite;
+  flex-shrink: 0;
+}
+
+/* ── Vehicle empty state ─────────────────────────────────────── */
+.bcp-vehicle-empty {
+  padding: 28px 0;
+  text-align: center;
+}
+
+.bcp-empty-icon-wrap {
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  background: var(--bcp-surface-alt);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto 12px;
+}
+
+.bcp-empty-icon-wrap.is-loading {
+  animation: bcp-pulse 2s infinite;
+}
+
+.bcp-empty-text {
+  color: var(--bcp-text-muted);
+  font-size: 14px;
+  margin: 0;
+}
+
+/* ── Vehicle list ────────────────────────────────────────────── */
+.bcp-vehicle-list {
   display: flex;
   flex-direction: column;
-  gap: 16px;
-}
-
-.booking-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-}
-
-.create-booking-btn {
-  padding: 10px 16px;
-  border-radius: 10px;
-  border: none;
-  color: white;
-  font-weight: 600;
-  cursor: pointer;
-}
-
-.booking-list {
-  display: flex;
-  flex-direction: column;
-  gap: 14px;
-}
-
-/* CARD */
-.booking-card {
-  padding: 16px;
-  border-radius: 14px;
-  transition: 0.2s;
-}
-
-.booking-card:hover {
-  transform: translateY(-2px);
-}
-
-/* TOP */
-.booking-top {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-}
-
-.booking-id {
-  font-weight: 700;
-  font-size: 15px;
-}
-
-.pickup-text {
-  font-size: 12px;
-}
-
-/* ACTIONS */
-.booking-actions {
-  display: flex;
-  align-items: center;
   gap: 10px;
 }
 
-.status-badge {
-  padding: 4px 10px;
-  border-radius: 8px;
+/* ── Vehicle row button ──────────────────────────────────────── */
+.bcp-vehicle-row {
+  display: flex;
+  position: relative;
+  align-items: center;
+  gap: 14px;
+  padding: 14px 16px;
+  border-radius: 14px;
+  cursor: pointer;
+  background: var(--bcp-surface-alt);
+  border: 1.5px solid var(--bcp-border);
+  transition: background 0.2s, border-color 0.2s, box-shadow 0.2s;
+  text-align: left;
+  width: 100%;
+  font-family: 'Sora', sans-serif;
+  box-sizing: border-box;
+}
+
+.closest-tag {
+  position: absolute;
+  top: -8px;
+  left: 12px;
+
+  background: #22c55e;
+  color: #fff;
+
+  font-size: 10px;
+  font-weight: 600;
+
+  padding: 2px 8px;
+  border-radius: 999px;
+
+  box-shadow: 0 2px 6px rgba(0,0,0,0.2);
+  z-index: 2;
+}
+
+
+
+.bcp-vehicle-row:hover {
+  border-color: var(--bcp-accent);
+}
+
+.bcp-vehicle-row.is-selected {
+  background: var(--bcp-accent-light);
+  border: 2px solid var(--bcp-accent);
+  box-shadow: 0 0 0 3px var(--bcp-accent-light);
+}
+
+/* ── Vehicle icon box ────────────────────────────────────────── */
+.bcp-vehicle-icon-box {
+  width: 44px;
+  height: 44px;
+  border-radius: 12px;
+  background: var(--bcp-surface);
+  border: 1px solid var(--bcp-border);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  transition: background 0.2s, border-color 0.2s;
+}
+
+.bcp-vehicle-row.is-selected .bcp-vehicle-icon-box {
+  background: var(--bcp-accent);
+  border-color: var(--bcp-accent);
+}
+
+/* ── Vehicle info text ───────────────────────────────────────── */
+.bcp-vehicle-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.bcp-vehicle-top-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 3px;
+  flex-wrap: wrap;
+}
+
+.bcp-vehicle-number {
+  font-weight: 700;
+  font-size: 14px;
+  color: var(--bcp-text);
+  letter-spacing: 0.3px;
+}
+
+.bcp-vehicle-meta {
+  font-size: 12px;
+  color: var(--bcp-text-muted);
+  margin: 0;
+}
+
+/* ── Vehicle price / selector ────────────────────────────────── */
+.bcp-vehicle-price-col {
+  text-align: right;
+  flex-shrink: 0;
+}
+
+.bcp-price-value {
+  font-weight: 700;
+  font-size: 16px;
+  color: var(--bcp-text);
+  transition: color 0.2s;
+}
+
+.bcp-vehicle-row.is-selected .bcp-price-value {
+  color: var(--bcp-accent);
+}
+
+.bcp-price-unit {
+  font-size: 11px;
+  font-weight: 400;
+  color: var(--bcp-text-muted);
+}
+
+.bcp-selector-hint {
+  font-size: 12px;
+  color: var(--bcp-text-muted);
+  margin-top: 4px;
+}
+
+/* ── Pill badges ─────────────────────────────────────────────── */
+.bcp-pill {
+  display: inline-block;
+  padding: 3px 10px;
+  border-radius: 99px;
   font-size: 11px;
   font-weight: 600;
+  font-family: 'Sora', sans-serif;
+  line-height: 1.4;
 }
 
-.track-btn {
-  padding: 6px 12px;
-  border-radius: 8px;
+.bcp-pill.status-active   { background: var(--bcp-success-bg); color: var(--bcp-success); }
+.bcp-pill.status-transit  { background: var(--bcp-warning-bg); color: var(--bcp-warning); }
+.bcp-pill.status-idle     { background: var(--bcp-surface-alt); color: var(--bcp-text-muted); }
+.bcp-pill.status-info     { background: var(--bcp-info-bg);    color: var(--bcp-info); }
+.bcp-pill.status-selected { background: var(--bcp-accent);     color: #fff; }
+.bcp-pill.status-destination { background: var(--bcp-success-bg); color: var(--bcp-success); }
+
+.bcp-badge-nearby {
+  margin-left: auto;
+  background: var(--bcp-warning-bg);
+  color: var(--bcp-warning);
+  padding: 3px 10px;
+  border-radius: 99px;
+  font-size: 12px;
+  font-weight: 600;
+  font-family: 'Sora', sans-serif;
+}
+
+.bcp-badge-coords {
+  background: var(--bcp-info-bg);
+  color: var(--bcp-info);
+  padding: 4px 12px;
+  border-radius: 99px;
+  font-size: 12px;
+  font-weight: 600;
+  font-family: 'Sora', sans-serif;
+}
+
+.bcp-badge-customer-name {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--bcp-text);
+}
+
+/* ── Summary card ────────────────────────────────────────────── */
+.bcp-card.is-summary {
+  border: 1.5px solid var(--bcp-accent);
+  background: var(--bcp-accent-light);
+  animation: bcp-fadeIn 0.3s ease;
+}
+
+.bcp-summary-label {
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.9px;
+  text-transform: uppercase;
+  color: var(--bcp-accent);
+  margin-bottom: 14px;
+}
+
+.bcp-summary-grid {
+  display: block;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: 10px;
+  margin-bottom: 18px;
+}
+
+.bcp-summary-item {
+  background: var(--bcp-surface);
+  border-radius: 10px;
+  padding: 10px 14px;
+}
+
+.bcp-summary-item-label {
+  font-size: 10px;
+  color: var(--bcp-text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.6px;
+  margin-bottom: 3px;
+}
+
+.bcp-summary-item-value {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--bcp-text);
+  margin: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* ── Submit button ───────────────────────────────────────────── */
+.bcp-submit-btn {
+  width: 100%;
+  padding: 14px;
+  border-radius: 12px;
   border: none;
-  color: white;
+  cursor: pointer;
+  background: var(--bcp-accent);
+  color: #fff;
+  font-size: 15px;
+  font-weight: 700;
+  font-family: 'Sora', sans-serif;
+  letter-spacing: 0.3px;
+  transition: background 0.2s, transform 0.1s, opacity 0.2s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  box-sizing: border-box;
+}
+
+.bcp-submit-btn:hover:not(:disabled) {
+  opacity: 0.9;
+}
+
+.bcp-submit-btn:active:not(:disabled) {
+  transform: scale(0.99);
+}
+
+.bcp-submit-btn:disabled {
+  cursor: wait;
+  background: var(--bcp-text-muted);
+}
+
+.bcp-submit-btn .bcp-spinner {
+  animation: bcp-spin 1s linear infinite;
+}
+
+/* ── Responsive ──────────────────────────────────────────────── */
+@media (max-width: 520px) {
+  .bcp-summary-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .bcp-topbar {
+    flex-wrap: wrap;
+  }
+
+  .bcp-page-title {
+    font-size: 22px;
+  }
+
+  .bcp-vehicle-row {
+    flex-wrap: wrap;
+    gap: 10px;
+  }
+
+  .bcp-vehicle-price-col {
+    text-align: left;
+  }
+
+  .bcp-badge-coords {
+    font-size: 11px;
+    padding: 3px 8px;
+  }
+}
+
+.bcp-search-wrap {
+  position: relative;
+  margin: 12px 22px;
+}
+
+.bcp-search-input {
+  width: 100%;
+  padding: 10px 14px;
+  border-radius: 10px;
+  border: 1px solid var(--bcp-border);
+  background: var(--bcp-input-bg);
+  color: var(--bcp-text);
+  font-size: 13px;
+  outline: none;
+}
+
+.bcp-search-results {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  background: var(--bcp-surface);
+  border: 1px solid var(--bcp-border);
+  border-radius: 10px;
+  margin-top: 6px;
+  max-height: 180px;
+  overflow-y: auto;
+  z-index: 1000;
+}
+
+.bcp-search-item {
+  padding: 10px 12px;
   font-size: 12px;
   cursor: pointer;
+  border-bottom: 1px solid var(--bcp-border);
 }
 
-/* INFO */
-.booking-info {
-  display: flex;
-  justify-content: space-between;
-  margin-top: 14px;
+.bcp-search-item:hover {
+  background: var(--bcp-surface-alt);
 }
 
-.info-item .label {
-  font-size: 11px;
-}
-
-.info-item {
-  font-size: 13px;
-}
-
-/* PROGRESS */
-.progress-block {
-  margin-top: 14px;
-}
-
-.progress-top {
-  display: flex;
-  justify-content: space-between;
+.bcp-search-loading {
   font-size: 12px;
-}
-
-.progress-bg {
-  height: 6px;
-  border-radius: 6px;
-  overflow: hidden;
+  color: var(--bcp-text-muted);
   margin-top: 6px;
 }
 
-.progress-fill {
-  height: 100%;
-  border-radius: 6px;
-  transition: width 0.4s ease;
+.vehicle-wrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
 }
 
-/* EMPTY */
-.empty-state {
+.vehicle-img {
+  width: 40px;
+  height: 40px;
+}
+
+/* 🔥 RIGHT SIDE POPUP */
+.vehicle-popup {
+  position: absolute;
+  left: 45px;
+  top: 50%;
+  transform: translateY(-50%);
+
+  background: white;
+  padding: 6px 10px;
+  border-radius: 8px;
+
+  box-shadow: 0 4px 12px rgba(0,0,0,0.25);
+
+  white-space: nowrap;
+  z-index: 1000;
+}
+
+.vehicle-number {
+  font-size: 12px;
+  font-weight: 600;
+  color: #222;
+}
+
+.vehicle-price {
+  font-size: 11px;
+  color: #666;
+}
+
+.vehicle-label {
+  background: white;
+  padding: 3px 6px;
+  border-radius: 6px;
+  margin-top: 2px;
   text-align: center;
-  padding: 30px;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.2);
+}
+
+.vehicle-price {
+  font-size: 9px;
+  color: #666;
+}
+
+.vehicle-number.show {
+  opacity: 1;
+}
+
+/* ROOT */
+.vmp-root {
+  min-height: 100vh;
+  background: var(--bcp-bg);
+  padding: 24px;
+  font-family: 'Sora', sans-serif;
+}
+
+/* HEADER */
+.vmp-header {
+  display: flex;
+  align-items: center;
+  margin-bottom: 20px;
+  gap: 12px;
+}
+
+.vmp-title {
+  flex: 1;
+  text-align: center;
+  font-family: 'Playfair Display', serif;
+  font-size: 22px;
+}
+
+.vmp-back-btn {
+  padding: 8px 14px;
+  border-radius: 10px;
+  border: 1px solid var(--bcp-border);
+  background: var(--bcp-surface);
+  cursor: pointer;
+}
+
+.vmp-vehicle-id {
+  font-weight: 600;
+  color: var(--bcp-accent);
+}
+
+/* LAYOUT */
+.vmp-layout {
+  display: grid;
+  grid-template-columns: 320px 1fr;
+  gap: 20px;
+}
+
+/* LEFT PANEL */
+.vmp-left {
+  display: flex;
+  flex-direction: column;
+}
+
+/* CARD */
+.vmp-card {
+  background: var(--bcp-surface);
+  border: 1px solid var(--bcp-border);
+  border-radius: 16px;
+  padding: 20px;
+}
+
+.vmp-card-title {
+  font-size: 18px;
+  font-weight: 700;
+}
+
+.vmp-meta {
+  font-size: 13px;
+  color: var(--bcp-text-muted);
+  margin-top: 4px;
+}
+
+.vmp-price {
+  margin-top: 10px;
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--bcp-accent);
+}
+
+.vmp-status {
+  margin-top: 12px;
+  font-size: 13px;
+  font-weight: 500;
+}
+
+.vmp-status.live {
+  color: #22c55e;
+}
+
+.vmp-status.offline {
+  color: #ef4444;
+}
+
+/* MAP */
+.vmp-map {
+  height: 70vh;
+  border-radius: 16px;
+  overflow: hidden;
+  border: 1px solid var(--bcp-border);
+}
+
+/* MOBILE */
+@media (max-width: 768px) {
+  .vmp-layout {
+    grid-template-columns: 1fr;
+  }
+
+  .vmp-map {
+    height: 400px;
+  }
+}
+
+/* selected vehicle highlight */
+.selected-vehicle .vehicle-img {
+  transform: scale(1.2);
+}
+
+.vehicle-wrapper.selected-vehicle {
+  transform: scale(1.4);
+  z-index: 1000;
+}
+
+/* smoother hover */
+.vehicle-wrapper:hover {
+  transform: scale(1.2);
+}
+
+.vehicle-wrapper img {
+  width: 32px;
+  height: 32px;
+}
+
+.vehicle-number-box {
+  position: absolute;
+  left: 38px;   /* 👉 pushes it to right of icon */
+  top: 50%;
+  transform: translateY(-50%);
+
+  background: white;
+  padding: 2px 6px;
+  border-radius: 6px;
+  font-size: 10px;
+  font-weight: 600;
+  white-space: nowrap;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.25);
+}
+
+.vehicle-number {
+  position: absolute;
+
+  /* ✅ attach relative to icon center */
+  left: 50%;
+  top: 50%;
+
+  /* 👉 move to RIGHT of icon perfectly */
+  transform: translate(18px, -50%) scale(0.8);
+
+  background: white;
+  padding: 2px 6px;
+  border-radius: 6px;
+  font-size: 10px;
+  font-weight: 600;
+  white-space: nowrap;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.25);
+
+  opacity: 0;
+  pointer-events: none;
+  transition: all 0.2s ease;
+}
+
+/* ✅ visible state */
+.vehicle-number.show {
+  transform: translate(18px, -50%) scale(1);
+  opacity: 1;
+}
+
+.price-tag {
+  position: absolute;
+  top: -24px;
+  background: #000;
+  color: #fff;
+  font-size: 11px;
+  padding: 3px 8px;
+  border-radius: 999px;
+  font-weight: 600;
+  z-index: 2;
+}
+
+
+.is-closest {
+  border: 2px solid #22c55e;
+}
+
+.user-location-dot {
+  position: relative;
+  width: 18px;
+  height: 18px;
+  background: #1e90ff;
+  border-radius: 50%;
+  border: 3px solid white;
+}
+
+.user-location-dot::after {
+  content: "";
+  position: absolute;
+
+  width: 40px;
+  height: 40px;
+
+  background: rgba(30, 144, 255, 0.4);
+  border-radius: 50%;
+
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);  /* ✅ PERFECT CENTER */
+
+  animation: pulse 1.5s infinite;
+}
+
+@keyframes pulse {
+  0% {
+    transform: scale(0.5);
+    opacity: 1;
+  }
+  100% {
+    transform: scale(1.8);
+    opacity: 0;
+  }
+}
+
+.eta-box {
+  margin-top: 4px;
+  background: white;
+  padding: 2px 6px;
+  border-radius: 6px;
+  font-size: 11px;
+  font-weight: 600;
+  color: #333;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.2);
+  text-align: center;
+}
+
+.flow-line {
+  stroke-dasharray: 10, 10;
+  animation: flowLine 2s linear infinite;
+}
+
+@keyframes flowLine {
+  from {
+    stroke-dashoffset: 0;
+  }
+  to {
+    stroke-dashoffset: -20;
+  }
+}
+
+.selected-vehicle {
+  transform: scale(1.5);
+}
+
+.vehicle-tag {
+  position: absolute;
+  top: -8px;
+  left: -8px;
+  padding: 3px 8px;
+  font-size: 11px;
+  font-weight: 600;
+  border-radius: 8px;
+  color: white;
+}
+
+/* 🚀 Fastest */
+.tag-fastest {
+  background: linear-gradient(135deg, #007bff, #00c6ff);
+}
+
+/* 💰 Cheapest */
+.tag-cheapest {
+  background: linear-gradient(135deg, #28a745, #7dffb2);
+}
+
+/* 📍 Closest */
+.tag-closest {
+  background: linear-gradient(135deg, #ff7a00, #ffb347);
+}
+
+/* Top row: name + vehicle */
+.bcp-summary-row.top-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-weight: 600;
+  margin-bottom: 10px;
+}
+
+.bcp-summary-name {
+  font-size: 15px;
+}
+
+.bcp-summary-vehicle {
+  font-size: 14px;
+  color: var(--bcp-text-muted);
+}
+
+/* Address rows */
+.bcp-summary-row {
+  margin-bottom: 10px;
+}
+
+.bcp-summary-item-label {
+  font-size: 11px;
+  color: var(--bcp-text-muted);
+}
+
+.bcp-summary-item-value {
+  font-size: 13px;
+  font-weight: 500;
+}
+
+/* COST ROW */
+.bcp-summary-row.cost-row {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 10px;
+}
+
+/* Cost styling */
+.bcp-cost-box {
+  font-size: 20px;
+  font-weight: bold;
+  color: var(--bcp-accent);
+}
+
+.tracking-main {
+  display: flex;
+  gap: 20px;
+  margin-top: 20px;
+}
+
+/* LEFT SIDE (MAP) */
+.tracking-left {
+  flex: 2;
+  min-height: 500px;
+}
+
+/* RIGHT SIDE */
+.tracking-right {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+/* Make cards fill nicely */
+.tracking-right .card {
+  flex: 1;
+}
+
+/* 🔥 MOBILE RESPONSIVE */
+@media (max-width: 768px) {
+  .tracking-main {
+    flex-direction: column;
+  }
+
+  .tracking-left,
+  .tracking-right {
+    flex: unset;
+  }
+}
+
+/* Map card wrapper */
+.map-card {
+  border-radius: 16px;
+  padding: 12px;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Ensure map fills nicely */
+.map-card > * {
+  width: 100%;
+  height: 100%;
+  border-radius: 12px;
+  overflow: hidden;
+}
+
+/* 🔥 Leaflet core fix */
+.leaflet-container {
+  height: 100%;
+  width: 100%;
+  z-index: 1;
+}
+
+/* prevent map overflow issues */
+.leaflet-pane,
+.leaflet-top,
+.leaflet-bottom {
+  z-index: 10;
 }

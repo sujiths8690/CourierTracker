@@ -1,12 +1,13 @@
 import { createSlice } from "@reduxjs/toolkit";
 import {
   createBooking,
-  fetchBooking,
+  fetchBookings,
   fetchBookingById,
   updateBooking,
 } from "./bookingActions";
 
 const initialState = {
+  bookings: [],
   booking: null,
   etaMinutes: null,
   distanceKm: null,
@@ -56,15 +57,14 @@ const bookingSlice = createSlice({
       })
 
       // 📄 FETCH BOOKING
-      .addCase(fetchBooking.pending, (state) => {
+      .addCase(fetchBookings.pending, (state) => {
         state.loading = true;
-        state.error = null;
       })
-      .addCase(fetchBooking.fulfilled, (state, { payload }) => {
+      .addCase(fetchBookings.fulfilled, (state, { payload }) => {
         state.loading = false;
-        state.booking = payload;
+        state.bookings = payload;   // 🔥 THIS FIXES UI
       })
-      .addCase(fetchBooking.rejected, (state, { payload }) => {
+      .addCase(fetchBookings.rejected, (state, { payload }) => {
         state.loading = false;
         state.error = payload;
       })

@@ -1,5 +1,6 @@
 import { prisma } from "../../utils/prisma";
 import { getDistance } from "../../utils/geo";
+import { sendVehicleLocationUpdate } from "../../sockets/tracking.socket";
 
 interface LocationInput {
   bookingId: number;
@@ -60,6 +61,19 @@ export const updateLocationService = async (data: LocationInput) => {
         status: "ONGOING"
       }
     });
+
+    // 🔥 ADD THIS BLOCK (VERY IMPORTANT)
+    await prisma.vehicleDetails.update({
+      where: { id: booking.vehicleId },
+      data: {
+        lastLat: lat,
+        lastLng: lng,
+        lastUpdated: new Date()
+      }
+    });
+
+    // 🔥 ALSO ADD THIS (for live map updates)
+    sendVehicleLocationUpdate(booking.vehicleId, lat, lng);
 
     // check destination
     const distToDest = getDistance(

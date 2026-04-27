@@ -7,3 +7,4 @@ export const selectEta = (state) => state.booking.etaMinutes;
 export const selectDistance = (state) => state.booking.distanceKm;
 export const selectSelectedBooking = (state) =>
   state.booking.selectedBooking;
+export const selectBookings = (state) => state.booking.bookings;

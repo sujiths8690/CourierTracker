@@ -56,11 +56,11 @@ export const updateBooking = async (req: Request, res: Response) => {
   }
 };
 
-export const getBooking = async (req: Request, res: Response) => {
+export const getBookingById = async (req: Request, res: Response) => {
   try {
     const bookingId = Number(req.params.id);
 
-    const result = await bookingService.getBooking(bookingId);
+    const result = await bookingService.getBookingById(bookingId);
 
     res.json({
       message: "Booking fetched successfully",
@@ -74,5 +74,21 @@ export const getBooking = async (req: Request, res: Response) => {
     }
 
     res.status(500).json({ message: err.message });
+  }
+};
+
+export const getAllBookingsController = async (req: Request, res: Response) => {
+  try {
+    const bookings = await bookingService.getAllBookings();
+
+    res.status(200).json({
+      message: "Bookings fetched successfully",
+      data: bookings
+    });
+
+  } catch (err) {
+    res.status(500).json({
+      message: "Failed to fetch bookings"
+    });
   }
 };
