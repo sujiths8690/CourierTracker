@@ -298,7 +298,7 @@
   font-weight: 600;
 
   background: var(--accent);
-  color: #000000;
+  color: white;
 
   /* 🔥 ADD THIS */
   box-shadow: 0 4px 12px rgba(0,0,0,0.15);
@@ -2033,7 +2033,6 @@
 /* Map card wrapper */
 .map-card {
   border-radius: 16px;
-  padding: 12px;
   height: 100%;
   display: flex;
   align-items: center;
@@ -2060,4 +2059,8 @@
 .leaflet-top,
 .leaflet-bottom {
   z-index: 10;
+}
+
+.leaflet-bottom{
+  display: none;
 }

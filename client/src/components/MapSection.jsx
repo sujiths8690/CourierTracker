@@ -109,6 +109,61 @@ export default function MapSection({
     iconAnchor: [10, 10],
   });
 
+  function SmartFit({ pos, route, destinationRoute, destination }) {
+    const map = useMap();
+
+    useEffect(() => {
+
+      // 🔥 Case 3: Vehicle → Pickup (highest priority)
+      // ✅ CASE 1: BOTH ROUTES → COMBINE
+      if (
+        route && route.length > 0 &&
+        destinationRoute && destinationRoute.length > 0
+      ) {
+        const fullRoute = [...route, ...destinationRoute];
+        map.fitBounds(fullRoute, { padding: [80, 80] });
+        return;
+      }
+
+      // ✅ CASE 2: ONLY VEHICLE → PICKUP
+      // ✅ CASE 1: BOTH ROUTES → COMBINE
+      if (
+        route && route.length > 0 &&
+        destinationRoute && destinationRoute.length > 0
+      ) {
+        const fullRoute = [...route, ...destinationRoute];
+
+        map.fitBounds(fullRoute, {
+          padding: [80, 80],
+          animate: true,
+          duration: 1
+        });
+
+        return;
+      }
+
+      // ✅ CASE 2: ONLY VEHICLE → PICKUP
+      if (route && route.length > 0) {
+        map.fitBounds(route, { padding: [60, 60] });
+        return;
+      }
+
+      // ✅ CASE 3: ONLY PICKUP → DESTINATION
+      if (destinationRoute && destinationRoute.length > 0) {
+        map.fitBounds(destinationRoute, { padding: [60, 60] });
+        return;
+      }
+
+      // 🔥 Case 0: Only pickup / current
+      if (pos) {
+        map.setView(pos, 13);
+      }
+
+    }, [pos, route, destinationRoute, destination]);
+
+    return null;
+  }
+
   const getMidPoint = (coords) => {
     if (!coords || coords.length === 0) return null;
     return coords[Math.floor(coords.length / 2)];
@@ -143,7 +198,7 @@ export default function MapSection({
               : ""
           }
 
-          <img src="${v.type.toLowerCase() === "pickup" ? pickupIconImg : truckIconImg}" />
+          <img src="${(v.type || "").toLowerCase() === "pickup" ? pickupIconImg : truckIconImg}" />
 
           ${
             etaText
@@ -166,7 +221,13 @@ export default function MapSection({
     >
       <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
 
-      <RecenterMap pos={pos} />
+      {/* <RecenterMap pos={pos} /> */}
+      <SmartFit
+        pos={pos}
+        route={route}
+        destinationRoute={destinationRoute}
+        destination={destination}
+      />
 
       {/* ✅ Only enable click if needed */}
       {clickable && onSelect && (
@@ -177,7 +238,7 @@ export default function MapSection({
       {pos && (
         <Marker
           position={pos}
-          icon={isCurrentLocation ? userLocationIcon : undefined}
+          {...(isCurrentLocation && { icon: userLocationIcon })}
         />
       )}
 
@@ -257,7 +318,7 @@ export default function MapSection({
           ) : null
         )}
 
-        {route && route.length > 0 && <FitBounds route={route} />}
+        {/* {route && route.length > 0 && <FitBounds route={route} />} */}
 
       {route && route.length > 0 && (
         <>

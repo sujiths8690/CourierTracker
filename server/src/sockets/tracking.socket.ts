@@ -55,7 +55,7 @@ export const initTrackingSocket = (server: WebSocketServer) => {
 
 
 export const sendVehicleLocationUpdate = (
-  vehicleId: number,
+  bookingId: number,
   lat: number,
   lng: number
 ) => {
@@ -63,7 +63,7 @@ export const sendVehicleLocationUpdate = (
 
   const message = JSON.stringify({
     type: "VEHICLE_LOCATION",
-    vehicleId,
+    bookingId,
     lat,
     lng
   });

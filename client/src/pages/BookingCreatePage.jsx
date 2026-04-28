@@ -146,6 +146,27 @@ export default function BookingCreatePage({ setPage, t }) {
     return 1; // default
   };
 
+  // find nearest point index on route
+  const findNearestIndex = (route, pos) => {
+    if (!route || !pos) return 0;
+
+    let minDist = Infinity;
+    let index = 0;
+
+    route.forEach((p, i) => {
+      const d =
+        (p[0] - pos[0]) * (p[0] - pos[0]) +
+        (p[1] - pos[1]) * (p[1] - pos[1]);
+
+      if (d < minDist) {
+        minDist = d;
+        index = i;
+      }
+    });
+
+    return index;
+  };
+
   useEffect(() => {
     const t = setTimeout(() => {
       setDebouncedVehicles(nearbyVehicles);
@@ -465,9 +486,11 @@ export default function BookingCreatePage({ setPage, t }) {
 
       const result = await dispatch(createBooking(form));
 
-      console.log("Submitting form:", form);
+      console.log("RESULT FULL:", result);
 
-      console.log("API result:", result);
+      if (result.meta.requestStatus === "rejected") {
+        console.error("ERROR:", result.payload);
+      }
 
       if (result.meta.requestStatus === "fulfilled") {
         setPage("dashboard");
@@ -945,8 +968,32 @@ export default function BookingCreatePage({ setPage, t }) {
                         </div>
 
                         <div className="bcp-vehicle-info">
-                          <p className="bcp-vehicle-meta">{v.type} · {v.owner}</p>
-                          {vehicleRouteMeta[v.id] ? (
+                          <div className="bcp-vehicle-info">
+
+                            {/* 🔥 Vehicle Number (MAIN) */}
+                            <p style={{
+                              fontWeight: "600",
+                              fontSize: "14px",
+                              color: "var(--bcp-text)"
+                            }}>
+                              {v.number || "Unknown Vehicle"}
+                            </p>
+
+                            {/* 👤 Owner */}
+                            <p style={{
+                              fontSize: "12px",
+                              color: "var(--bcp-text-muted)"
+                            }}>
+                              Owner: {v.owner || "N/A"}
+                            </p>
+
+                            {/* 🚚 Type */}
+                            <p className="bcp-vehicle-meta">
+                              {v.type}
+                            </p>
+
+                            {/* ⏱ Distance + Time */}
+                            {vehicleRouteMeta[v.id] ? (
                               <p style={{ fontSize: 12, color: "#007bff" }}>
                                 {vehicleRouteMeta[v.id].distance.toFixed(2)} km · 
                                 {formatDuration(vehicleRouteMeta[v.id].time)}
@@ -958,6 +1005,8 @@ export default function BookingCreatePage({ setPage, t }) {
                                   : "Choose location"}
                               </p>
                             )}
+
+                          </div>
                         </div>
 
                         <div className="bcp-vehicle-price-col">

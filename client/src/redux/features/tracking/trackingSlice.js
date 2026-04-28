@@ -2,10 +2,12 @@ import { createSlice } from "@reduxjs/toolkit";
 import {
   updateLocation,
   fetchCurrentLocation,
+  fetchTrackingLogs,
 } from "./trackingActions";
 
 const initialState = {
   currentLocation: null,
+  logs: [], // ✅ ADD THIS
   loading: false,
   error: null,
   success: null,
@@ -51,6 +53,17 @@ const trackingSlice = createSlice({
         state.currentLocation = payload;
       })
       .addCase(fetchCurrentLocation.rejected, (state, { payload }) => {
+        state.loading = false;
+        state.error = payload;
+      })
+      .addCase(fetchTrackingLogs.pending, (state) => {
+        state.loading = true;
+      })
+      .addCase(fetchTrackingLogs.fulfilled, (state, { payload }) => {
+        state.loading = false;
+        state.logs = payload; // ✅ THIS FILLS YOUR MAP DATA
+      })
+      .addCase(fetchTrackingLogs.rejected, (state, { payload }) => {
         state.loading = false;
         state.error = payload;
       });

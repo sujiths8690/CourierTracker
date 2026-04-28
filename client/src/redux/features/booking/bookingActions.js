@@ -6,7 +6,7 @@ export const createBooking = createAsyncThunk(
   "booking/create",
   async (data, thunkAPI) => {
     try {
-      const response = await API.post("/booking/create", data);
+      const response = await api.post("/booking/create", data);
       return response.data; // { booking, etaMinutes, distanceKm }
     } catch (error) {
       return thunkAPI.rejectWithValue(

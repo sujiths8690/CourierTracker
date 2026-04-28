@@ -3,6 +3,7 @@ import * as bookingService from "../../service/booking/booking.services";
 
 export const createBooking = async (req: Request, res: Response) => {
   try {
+    console.log("USER:", (req as any).user);
     const result = await bookingService.createBooking({
       ...req.body,
       userId: (req as any).user.userId

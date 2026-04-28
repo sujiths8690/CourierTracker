@@ -33,3 +33,18 @@ export const fetchCurrentLocation = createAsyncThunk(
     }
   }
 );
+
+export const fetchTrackingLogs = createAsyncThunk(
+  "tracking/fetchLogs",
+  async (bookingId, thunkAPI) => {
+    try {
+      const response = await API.get(`/tracking/logs/${bookingId}`);
+      console.log("API RESPONSE:", response.data);
+      return response.data.data;
+    } catch (error) {
+      return thunkAPI.rejectWithValue(
+        error.response?.data?.message || "Fetch logs failed"
+      );
+    }
+  }
+);

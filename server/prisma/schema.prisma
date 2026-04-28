@@ -63,6 +63,7 @@ model VehicleBooking {
   trackingToken  String                @unique
   createdAt      DateTime              @default(now())
   updatedAt      DateTime               @updatedAt
+  route          Json?
   destLng        Float
   pickupLng      Float
   lastLat        Float?

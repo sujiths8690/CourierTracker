@@ -210,7 +210,7 @@ export const deleteVehicle = async (vehicleId: number) => {
 
     await prisma.vehicleDetails.update({
       where: { id: vehicleId },
-      data: { isActive: false }
+      data: { isActive: false },
     });
 
     return { message: "Vehicle deleted successfully" };
@@ -230,6 +230,9 @@ export const getNearbyVehicles = async (
       where: {
         isActive: true,
         status: "AVAILABLE"
+      },
+      include:{
+        VehicleUser:true
       }
     });
 
@@ -248,6 +251,8 @@ export const getNearbyVehicles = async (
 
       return {
         ...v,
+        owner: v.VehicleUser?.[0]?.name || "Unknown",
+        ownerMobile: v.VehicleUser?.[0]?.mobileNumber || null,
         distance: Number(distance.toFixed(2)),
         eta: Math.round(eta),
         estimatedPrice: v.pricePerKm

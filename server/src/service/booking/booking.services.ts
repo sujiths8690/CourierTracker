@@ -2,6 +2,7 @@ import { prisma } from "../../utils/prisma";
 import { v4 as uuidv4 } from "uuid";
 import { getDistanceAndTime } from "../../utils/distance";
 import { getDistance } from "../../utils/geo";
+import { startBookingSimulation } from "../../utils/vehicleSimulation";
 
 interface BookingInput {
   vehicleId: number;
@@ -141,7 +142,7 @@ export const updateBooking = async (bookingId: number, data: any) => {
         });
       }
 
-      return await tx.vehicleBooking.update({
+      const updatedBooking = await tx.vehicleBooking.update({
         where: { id: bookingId },
         data: {
           vehicleId: newVehicleId,
@@ -151,10 +152,19 @@ export const updateBooking = async (bookingId: number, data: any) => {
           destLat,
           destLng,
           destAddress,
-          customerId: newCustomerId
+          customerId: newCustomerId,
+          status: data.status ?? booking.status
         }
       });
+
+      return updatedBooking; // 🔥 VERY IMPORTANT
     });
+
+    // 🔥 START SIMULATION WHEN CONFIRMED
+    if (data.status === "ONGOING") {
+      await startBookingSimulation(updated);
+      console.log("Tracking simulation started!!!!!")
+    }
 
     return { updated };
 

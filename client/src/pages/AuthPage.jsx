@@ -18,6 +18,7 @@ export default function AuthPage({ darkMode, setDarkMode, t, setPage }) {
 
   const handleSubmit = async () => {
     console.log("🔥 CLICKED LOGIN");
+
     try {
       const schema = authMode === "login" ? loginSchema : registerSchema;
 
@@ -31,25 +32,31 @@ export default function AuthPage({ darkMode, setDarkMode, t, setPage }) {
             })
           : registerUser(form);
 
-      const res = await dispatch(action);
+      // 🔥 THIS FIXES EVERYTHING
+      const res = await dispatch(action).unwrap();
 
-      if (res.meta.requestStatus === "fulfilled") {
-        toast.success(
-          authMode === "login"
-            ? "Login successful"
-            : "Account created"
-        );
+      toast.success(
+        authMode === "login"
+          ? "Login successful"
+          : "Account created"
+      );
 
-        // ✅ move to dashboard after login
-        setPage("dashboard");
-      } else {
-        toast.error(res.payload || "Something went wrong");
-      }
+      // ✅ reset form
+      setForm({
+        name: "",
+        email: "",
+        password: "",
+      });
+
+      setPage("dashboard");
+
     } catch (error) {
+      console.error("❌ ERROR:", error);
+
       if (error.inner) {
         error.inner.forEach((e) => toast.error(e.message));
       } else {
-        toast.error(error.message);
+        toast.error(error || "Something went wrong");
       }
     }
   };

@@ -128,3 +128,18 @@ export const getCurrentLocation = async (bookingId: number) => {
     throw err;
   }
 };
+
+export const getTrackingLogs = async (bookingId: number) => {
+  try {
+    const logs = await prisma.trackingLog.findMany({
+      where: { bookingId },
+      orderBy: { createdAt: "asc" }
+    });
+
+    return logs;
+
+  } catch (err: any) {
+    console.error("Get logs error", err);
+    throw err;
+  }
+};

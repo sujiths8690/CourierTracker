@@ -53,3 +53,19 @@ export const getCurrentLocation = async (req: Request, res: Response) => {
     res.status(500).json({ message: err.message });
   }
 };
+
+export const getTrackingLogsController = async (req: Request, res: Response) => {
+  try {
+    const bookingId = Number(req.params.bookingId);
+
+    const logs = await trackingService.getTrackingLogs(bookingId);
+
+    res.json({
+      message: "Logs fetched",
+      data: logs
+    });
+
+  } catch (err) {
+    res.status(500).json({ message: "Failed to fetch logs" });
+  }
+};
