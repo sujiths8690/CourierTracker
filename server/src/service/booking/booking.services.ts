@@ -2,7 +2,7 @@ import { prisma } from "../../utils/prisma";
 import { v4 as uuidv4 } from "uuid";
 import { getDistanceAndTime } from "../../utils/distance";
 import { getDistance } from "../../utils/geo";
-import { startBookingSimulation } from "../../utils/vehicleSimulation";
+import { getRoute } from "../../utils/getRoute";
 
 interface BookingInput {
   vehicleId: number;
@@ -46,6 +46,13 @@ export const createBooking = async (data: BookingInput) => {
       { lat: destLat, lng: destLng }
     );
 
+    const route = await getRoute(
+      pickupLat,
+      pickupLng,
+      destLat,
+      destLng
+    );
+
     const booking = await prisma.$transaction(async (tx) => {
 
       const created = await tx.vehicleBooking.create({
@@ -61,7 +68,8 @@ export const createBooking = async (data: BookingInput) => {
           userId,
           status: "PENDING",
           trackingToken: uuidv4(),
-          bookingId: `BK${Date.now()}`
+          bookingId: `BK${Date.now()}`,
+          route:route
         }
       });
 
@@ -72,6 +80,7 @@ export const createBooking = async (data: BookingInput) => {
 
       return created;
     });
+    
 
     return {
       booking,
@@ -162,7 +171,6 @@ export const updateBooking = async (bookingId: number, data: any) => {
 
     // 🔥 START SIMULATION WHEN CONFIRMED
     if (data.status === "ONGOING") {
-      await startBookingSimulation(updated);
       console.log("Tracking simulation started!!!!!")
     }
 

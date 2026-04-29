@@ -67,10 +67,45 @@ const createVehicleIcon = (type) => {
   });
 };
 
+const createPulseIcon = (color) => {
+  return L.divIcon({
+    className: "pulse-marker",
+    html: `
+      <div class="pulse-container">
+        <div class="pulse-dot" style="background:${color}"></div>
+        <div class="pulse-wave" style="border-color:${color}"></div>
+        <div class="pulse-wave delay" style="border-color:${color}"></div>
+      </div>
+    `,
+    iconSize: [30, 30],
+    iconAnchor: [15, 15],
+  });
+};
+
+
 export default function TrackingMap({ vehiclePos, booking, coveredPath }) {
 
   const defaultCenter = [9.9312, 76.2673];
   console.log("ROUTE:", booking?.route);
+  console.log("Route length", booking?.route?.length)
+
+  const fullRoute = (() => {
+    if (!booking?.route) return [];
+
+    // before pickup → use vehicle → pickup
+    if (!coveredPath || coveredPath.length === 0) {
+      if (vehiclePos && booking.pickupLat) {
+        return [
+          vehiclePos,
+          [booking.pickupLat, booking.pickupLng],
+          ...booking.route
+        ];
+      }
+    }
+
+    // after pickup → normal route
+    return booking.route;
+  })();
 
   const center =
     vehiclePos ||
@@ -96,20 +131,91 @@ export default function TrackingMap({ vehiclePos, booking, coveredPath }) {
         />
       )}
 
-      {/* 🔵 FULL ROUTE (from booking) */}
-      {booking?.route && (
-        <Polyline
-          positions={booking.route}
-          pathOptions={{
-            color: "#999",
-            weight: 5,
-            opacity: 0.3,
-            dashArray: "8, 10"
-          }}
+      {/* 🟠 Pickup */}
+      {booking?.pickupLat && booking?.pickupLng && (
+        <Marker
+          position={[booking.pickupLat, booking.pickupLng]}
+          icon={createPulseIcon("#f97316")} // orange
         />
       )}
 
+      {/* 🟢 Destination */}
+      {booking?.destLat && booking?.destLng && (
+        <Marker
+          position={[booking.destLat, booking.destLng]}
+          icon={createPulseIcon("#22c55e")} // green
+        />
+      )}
+
+      {/* 🔵 FULL ROUTE (from booking) */}
+      {booking?.route && booking.route.length > 0 && (
+        <>
+          {/* 🔲 Outline */}
+          <Polyline
+            positions={booking.route}
+            pathOptions={{
+              color: "#555",
+              weight: 8,
+              opacity: 0.6,
+              lineJoin: "round",
+              lineCap: "round"
+            }}
+          />
+
+          {/* ⚪ Main grey */}
+          <Polyline
+            positions={fullRoute}
+            pathOptions={{
+              color: "#9ca3af",
+              weight: 5,
+              opacity: 0.8,
+              lineJoin: "round",
+              lineCap: "round"
+            }}
+          />
+        </>
+      )}
+
       {/* 🟢 COVERED PATH */}
+      {coveredPath && coveredPath.length > 0 && (
+        <>
+          {/* 🔲 Outline */}
+          <Polyline
+            positions={coveredPath}
+            pathOptions={{
+              color: "#0a5c2e", // dark green
+              weight: 8,
+              opacity: 0.9,
+              lineJoin: "round",
+              lineCap: "round"
+            }}
+          />
+
+          {/* 🟢 Main green */}
+          <Polyline
+            positions={coveredPath}
+            pathOptions={{
+              color: "#22c55e", // bright green
+              weight: 5,
+              opacity: 1,
+              lineJoin: "round",
+              lineCap: "round"
+            }}
+          />
+
+          {/* ✨ Flow animation */}
+          <Polyline
+            positions={coveredPath}
+            pathOptions={{
+              color: "#86efac", // light green glow
+              weight: 3,
+              dashArray: "10, 20",
+              className: "flow-line",
+              lineCap: "round"
+            }}
+          />
+        </>
+      )}
       
     </MapContainer>
   );

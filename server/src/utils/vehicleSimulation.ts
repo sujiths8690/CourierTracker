@@ -1,245 +1,348 @@
-import { prisma } from "./prisma";
-import { sendVehicleLocationUpdate } from "../sockets/tracking.socket";
+import { updateVehicleLocation } from "../service/vehicle/vehicle.services";
+import { sendLocationUpdate, sendVehicleLocationUpdate } from "../sockets/tracking.socket";
+import { prisma } from "../utils/prisma";
+import { getDistance } from "./geo";
 
-let interval: NodeJS.Timeout;
+const routeCache: Record<string, any[]> = {};
+const routeIndex: Record<string, number> = {};
+const loadingStartTime: Record<string, number> = {};
 
-// 🧠 Store routes in memory
-const vehicleRoutes: Record<number, [number, number][]> = {};
-const vehicleIndexes: Record<number, number> = {};
+// ✅ LOCKS
+const pickupReachedMap: Record<string, boolean> = {};
+const destinationReachedMap: Record<string, boolean> = {};
 
-// 🧠 Booking-based simulation storage
-const bookingRoutes: Record<number, [number, number][]> = {};
-const bookingIndexes: Record<number, number> = {};
-
-interface BookingSimulationInput {
-  id: number;
-  vehicleId: number;
-  pickupLat: number;
-  pickupLng: number;
-  destLat: number;
-  destLng: number;
-}
-
-// 🌍 Get route from OSRM
-const getRoute = async (
-  startLat: number,
-  startLng: number,
-  endLat: number,
-  endLng: number
-) => {
+const getRoute = async (start: any, end: any) => {
   try {
     const res = await fetch(
-      `https://router.project-osrm.org/route/v1/driving/${startLng},${startLat};${endLng},${endLat}?overview=full&geometries=geojson`
+      `https://router.project-osrm.org/route/v1/driving/${start.lng},${start.lat};${end.lng},${end.lat}?overview=full&geometries=geojson`
     );
 
     const data = await res.json();
-
-    return data.routes[0].geometry.coordinates; // [lng, lat]
-  } catch (err) {
-    console.error("Route fetch failed", err);
+    return data.routes[0].geometry.coordinates;
+  } catch {
     return [];
   }
 };
 
-export const startVehicleSimulation = () => {
-  console.log("🚀 Vehicle simulation started");
+export const startVehicleSimulation = async () => {
+  console.log("🚚 Vehicle simulation started...");
 
-  interval = setInterval(async () => {
-    try {
-      const vehicles = await prisma.vehicleDetails.findMany({
+  setInterval(async () => {
+    const vehicles = await prisma.vehicleDetails.findMany({
+      where: { isActive: true },
+    });
+
+    for (const v of vehicles) {
+      let currentLat = v.lastLat ?? 9.9312;
+      let currentLng = v.lastLng ?? 76.2673;
+
+      const booking = await prisma.vehicleBooking.findFirst({
         where: {
+          vehicleId: v.id,
+          status: { in: ["PENDING", "ONGOING", "LOADING"] },
           isActive: true,
-          status: "AVAILABLE"
-        }
+        },
       });
 
-      for (const v of vehicles) {
+      // =========================================================
+      // 🚚 VEHICLE WITH BOOKING
+      // =========================================================
+      if (booking) {
+        const cacheKey = `${v.id}-${booking.id}`;
 
-        let baseLat = v.lastLat;
-        let baseLng = v.lastLng;
+        // ✅ DESTINATION CHECK (STOP LOOP)
+        const reachedDestination =
+          getDistance(
+            currentLat,
+            currentLng,
+            booking.destLat,
+            booking.destLng
+          ) < 0.05;
 
-        // 🟢 If no location → assign initial location
-        if (baseLat == null || baseLng == null) {
-          baseLat = 9.9312 + (Math.random() - 0.5) * 0.01;
-          baseLng = 76.2673 + (Math.random() - 0.5) * 0.01;
+        if (pickupReachedMap[cacheKey] === true && reachedDestination) {
+          if (!destinationReachedMap[cacheKey]) {
+            destinationReachedMap[cacheKey] = true;
 
-          await prisma.vehicleDetails.update({
-            where: { id: v.id },
-            data: {
-              lastLat: baseLat,
-              lastLng: baseLng
-            }
-          });
-        }
+            console.log("📦 FINAL DESTINATION REACHED");
 
-        // 🔥 If no route → create one
-        if (!vehicleRoutes[v.id]) {
-          const endLat = baseLat + (Math.random() - 0.5) * 0.05;
-          const endLng = baseLng + (Math.random() - 0.5) * 0.05;
-
-          const route = await getRoute(baseLat, baseLng, endLat, endLng);
-
-          if (!route.length) continue;
-
-          vehicleRoutes[v.id] = route;
-          vehicleIndexes[v.id] = 0;
-        }
-
-        const route = vehicleRoutes[v.id];
-        let index = vehicleIndexes[v.id];
-
-        // 🔁 If route finished → reset
-        if (index >= route.length) {
-          delete vehicleRoutes[v.id];
-          delete vehicleIndexes[v.id];
-          continue;
-        }
-
-        // 🚗 Move along route
-        const [lng, lat] = route[index];
-
-        vehicleIndexes[v.id] = index + 1;
-
-        const newLat = lat;
-        const newLng = lng;
-
-        // 💾 Save to DB
-        await prisma.vehicleDetails.update({
-          where: { id: v.id },
-          data: {
-            lastLat: newLat,
-            lastLng: newLng
+            await prisma.vehicleBooking.update({
+              where: { id: booking.id },
+              data: { status: "COMPLETED", isActive: false },
+            });
           }
-        });
 
-        // 📡 Send via WebSocket
-        sendVehicleLocationUpdate(v.id, newLat, newLng);
-      }
-
-      // 🔴 HANDLE BOOKING VEHICLES (VERY IMPORTANT)
-      const activeBookings = await prisma.vehicleBooking.findMany({
-        where: {
-          status: "ONGOING"
+          continue; // 🚫 STOP MOVEMENT
         }
-      });
 
-      for (const b of activeBookings) {
+        // ✅ PICKUP CHECK
+        const reachedPickup =
+          getDistance(
+            currentLat,
+            currentLng,
+            booking.pickupLat,
+            booking.pickupLng
+          ) < 0.05;
 
-        const route = bookingRoutes[b.id];
-        let index = bookingIndexes[b.id];
+        if (!pickupReachedMap[cacheKey] && reachedPickup) {
+          pickupReachedMap[cacheKey] = true;
 
-        if (!route) continue;
-
-        if (index >= route.length) {
-          delete bookingRoutes[b.id];
-          delete bookingIndexes[b.id];
+          loadingStartTime[cacheKey] = Date.now();
 
           await prisma.vehicleBooking.update({
-            where: { id: b.id },
-            data: { status: "COMPLETED" }
+            where: { id: booking.id },
+            data: { status: "LOADING" }, // 👈 NEW STATUS
           });
 
-          console.log("✅ Booking completed:", b.id);
+          console.log("📦 Pickup reached → loading items into truck");
+
+          delete routeCache[cacheKey];
+          delete routeIndex[cacheKey];
+
+          continue;
+        }
+
+
+        // 🕒 LOADING STATE (WAIT 5 seconds)
+        if (pickupReachedMap[cacheKey] && !destinationReachedMap[cacheKey]) {
+          const startTime = loadingStartTime[cacheKey];
+
+          if (startTime && Date.now() - startTime < 5000) {
+            console.log("⏳ Loading... please wait");
+            continue;
+          }
+
+          // ✅ LOADING DONE → START DELIVERY
+          if (startTime) {
+            console.log("🚚 Loading complete → moving to destination");
+
+            await prisma.vehicleBooking.update({
+              where: { id: booking.id },
+              data: { status: "ONGOING" },
+            });
+
+            delete loadingStartTime[cacheKey];
+          }
+        }
+
+        // ✅ CREATE ROUTE
+        if (!routeCache[cacheKey]) {
+          const start = { lat: currentLat, lng: currentLng };
+
+          const end = !pickupReachedMap[cacheKey]
+            ? { lat: booking.pickupLat, lng: booking.pickupLng }
+            : { lat: booking.destLat, lng: booking.destLng };
+
+          // 🚨 AVOID MICRO ROUTES
+          const distanceToTarget = getDistance(
+            currentLat,
+            currentLng,
+            end.lat,
+            end.lng
+          );
+
+          if (distanceToTarget < 0.03) {
+
+            // SAME LOGIC HERE
+            if (!pickupReachedMap[cacheKey]) {
+              console.log("📦 Close enough → FORCE pickup reached");
+
+              pickupReachedMap[cacheKey] = true;
+              loadingStartTime[cacheKey] = Date.now();
+
+              await prisma.vehicleBooking.update({
+                where: { id: booking.id },
+                data: { status: "LOADING" },
+              });
+
+              delete routeCache[cacheKey];
+              delete routeIndex[cacheKey];
+
+              continue;
+            } else {
+              if (!pickupReachedMap[cacheKey]) {
+                console.log("⚠️ Ignoring destination force — pickup not reached yet");
+                continue;
+              }
+
+              console.log("📦 Close enough → FORCE destination reached");
+
+              destinationReachedMap[cacheKey] = true;
+
+              await prisma.vehicleBooking.update({
+                where: { id: booking.id },
+                data: { status: "COMPLETED", isActive: false },
+              });
+
+              continue;
+            }
+          }
+
+          const newRoute = await getRoute(start, end);
+
+          // 🚨 BLOCK SMALL ROUTES (MAIN FIX)
+          if (!newRoute.length || newRoute.length < 2) {
+
+            // ✅ IF GOING TO PICKUP → FORCE PICKUP REACHED
+            if (!pickupReachedMap[cacheKey]) {
+              console.log("📦 Route too small → FORCE pickup reached");
+
+              pickupReachedMap[cacheKey] = true;
+              loadingStartTime[cacheKey] = Date.now();
+
+              await prisma.vehicleBooking.update({
+                where: { id: booking.id },
+                data: { status: "LOADING" },
+              });
+
+              delete routeCache[cacheKey];
+              delete routeIndex[cacheKey];
+
+              continue;
+            }
+
+            // ✅ IF GOING TO DESTINATION → FORCE DELIVERY
+            else {
+              // 🚫 DO NOT COMPLETE BEFORE PICKUP
+              if (!pickupReachedMap[cacheKey]) {
+                console.log("⚠️ Ignoring destination force — pickup not reached yet");
+                continue;
+              }
+
+              console.log("📦 Route too small → FORCE destination reached");
+
+              destinationReachedMap[cacheKey] = true;
+
+              await prisma.vehicleBooking.update({
+                where: { id: booking.id },
+                data: { status: "COMPLETED", isActive: false },
+              });
+
+              continue;
+            }
+          }
+
+          routeCache[cacheKey] = newRoute;
+          routeIndex[cacheKey] = 0;
+        }
+
+        const route = routeCache[cacheKey];
+        const index = routeIndex[cacheKey] || 0;
+
+        if (!route[index]) {
+          console.log("⚠️ Route ended → waiting for new route");
+
+          delete routeCache[cacheKey];
+          delete routeIndex[cacheKey];
+
+          // ❗ DO NOT continue blindly → force route recreation next loop
           continue;
         }
 
         const [lng, lat] = route[index];
 
-        bookingIndexes[b.id] = index + 1;
+        // ✅ UPDATE VEHICLE
+        await updateVehicleLocation(v.id, lat, lng);
 
-        // 🚗 Update vehicle location
-        await prisma.vehicleDetails.update({
-          where: { id: b.vehicleId },
+        // ✅ SAVE TRACKING
+        await prisma.trackingLog.create({
           data: {
-            lastLat: lat,
-            lastLng: lng
-          }
+            bookingId: booking.id,
+            lat,
+            lng,
+          },
         });
 
-        // 📡 Send via WebSocket (IMPORTANT: bookingId)
-        sendVehicleLocationUpdate(b.id, lat, lng);
+        // ✅ SOCKET
+        sendLocationUpdate(booking.id, lat, lng);
+        sendVehicleLocationUpdate(v.id, lat, lng);
+
+        // 👉 MOVE FORWARD
+        routeIndex[cacheKey] = index + 1;
+
+        // ✅ ROUTE COMPLETE
+        if (routeIndex[cacheKey] >= route.length) {
+          console.log("✅ Route completed");
+
+          // 🔥 CRITICAL: decide stage here
+          if (!pickupReachedMap[cacheKey]) {
+            console.log("📦 Route finished → treating as PICKUP reached");
+
+            pickupReachedMap[cacheKey] = true;
+            loadingStartTime[cacheKey] = Date.now();
+
+            await prisma.vehicleBooking.update({
+              where: { id: booking.id },
+              data: { status: "LOADING" },
+            });
+          } else if (!destinationReachedMap[cacheKey]) {
+            console.log("📦 Route finished → treating as DESTINATION reached");
+
+            destinationReachedMap[cacheKey] = true;
+
+            await prisma.vehicleBooking.update({
+              where: { id: booking.id },
+              data: { status: "COMPLETED", isActive: false },
+            });
+          }
+
+          delete routeCache[cacheKey];
+          delete routeIndex[cacheKey];
+        }
       }
 
-    } catch (err) {
-      console.error("Simulation error:", err);
+      // =========================================================
+      // 🌍 NO BOOKING → RANDOM MOVEMENT
+      // =========================================================
+      else {
+        if (!routeCache[v.id]) {
+          const start = { lat: currentLat, lng: currentLng };
+
+          const end = {
+            lat: currentLat + (Math.random() - 0.5) * 0.02,
+            lng: currentLng + (Math.random() - 0.5) * 0.02,
+          };
+
+          const newRoute = await getRoute(start, end);
+
+          if (!newRoute.length || newRoute.length < 2) {
+            console.log("⚠️ Small route → direct move");
+
+            const step = 0.0005;
+
+            const lat = currentLat + (end.lat - currentLat) * step;
+            const lng = currentLng + (end.lng - currentLng) * step;
+
+            await updateVehicleLocation(v.id, lat, lng);
+            sendVehicleLocationUpdate(v.id, lat, lng);
+
+            continue;
+          }
+
+          routeCache[v.id] = newRoute;
+          routeIndex[v.id] = 0;
+        }
+
+        const route = routeCache[v.id];
+        const index = routeIndex[v.id] || 0;
+
+        if (!route[index]) {
+          delete routeCache[v.id];
+          delete routeIndex[v.id];
+          continue;
+        }
+
+        const [lng, lat] = route[index];
+
+        await updateVehicleLocation(v.id, lat, lng);
+        sendVehicleLocationUpdate(v.id, lat, lng);
+
+        routeIndex[v.id] = index + 1;
+
+        if (routeIndex[v.id] >= route.length) {
+          delete routeCache[v.id];
+          delete routeIndex[v.id];
+        }
+      }
     }
-  }, 2000); // 🔥 smoother movement (2 sec)
-};
-
-export const stopVehicleSimulation = () => {
-  clearInterval(interval);
-};
-
-const snapToRoad = async (lat: number, lng: number) => {
-  const res = await fetch(
-    `https://router.project-osrm.org/nearest/v1/driving/${lng},${lat}`
-  );
-
-  const data = await res.json();
-
-  return [
-    data.waypoints[0].location[1], // lat
-    data.waypoints[0].location[0]  // lng
-  ];
-};
-
-export const startBookingSimulation = async (booking: BookingSimulationInput) => {
-  const vehicle = await prisma.vehicleDetails.findUnique({
-    where: { id: booking.vehicleId }
-  });
-
-  if (!vehicle) return;
-
-  let startLat = vehicle.lastLat;
-  let startLng = vehicle.lastLng;
-
-  if (startLat == null || startLng == null) {
-    startLat = booking.pickupLat;
-    startLng = booking.pickupLng;
-  }
-
-    // 🔥 SNAP POINTS TO REAL ROAD
-  const [snapPickupLat, snapPickupLng] = await snapToRoad(
-    booking.pickupLat,
-    booking.pickupLng
-  );
-
-  const [snapDestLat, snapDestLng] = await snapToRoad(
-    booking.destLat,
-    booking.destLng
-  );
-
-  // 🚗 vehicle → pickup (snap pickup)
-  const route1 = await getRoute(
-    startLat,
-    startLng,
-    snapPickupLat,
-    snapPickupLng
-  );
-
-  // 📦 pickup → destination (snap both)
-  const route2 = await getRoute(
-    snapPickupLat,
-    snapPickupLng,
-    snapDestLat,
-    snapDestLng
-  );
-  const fullRoute: [number, number][] = [...route1, ...route2].map(
-    ([lng, lat]: [number, number]) => [lat, lng]
-  );
-
-  if (!fullRoute.length) return;
-
-  // 🔥 ADD HERE
-  await prisma.vehicleBooking.update({
-    where: { id: booking.id },
-    data: {
-      route: fullRoute
-    }
-  });
-
-  bookingRoutes[booking.id] = fullRoute;
-  bookingIndexes[booking.id] = 0;
-
-  console.log("🔥 Booking simulation started:", booking.id);
+  }, 3000);
 };

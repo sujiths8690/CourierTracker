@@ -303,10 +303,10 @@ export default function MapSection({
       {/* ✅ Show vehicles only when needed */}
       {showVehicles &&
         vehicles.map((v) =>
-          v.lat && v.lng ? (
+          (v.lat || v.lastLat) && (v.lng || v.lastLng) ? (
             <Marker
               key={v.id}
-              position={[v.lat, v.lng]}
+              position={[v.lat || v.lastLat, v.lng || v.lastLng]}
               icon={createVehicleIcon(v, selectedVehicleId)}
               eventHandlers={{
                 click: () => {

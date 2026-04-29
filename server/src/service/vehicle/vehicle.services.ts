@@ -272,13 +272,29 @@ export const getNearbyVehicles = async (
   }
 };
 
+export const updateVehicleLocation = async (
+  vehicleId: number,
+  lat: number,
+  lng: number
+) => {
+  await prisma.vehicleDetails.update({
+    where: { id: vehicleId },
+    data: {
+      lastLat: lat,
+      lastLng: lng,
+      lastUpdated: new Date()
+    }
+  });
+};
+
 const vehicleService = {
   createVehicle,
   updateVehicle,
   getAllVehicles,
   getVehicleById,
   deleteVehicle,
-  getNearbyVehicles
+  getNearbyVehicles,
+  updateVehicleLocation
 };
 
 export default vehicleService;

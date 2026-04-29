@@ -141,3 +141,47 @@ export const getNearbyVehiclesController = async (req: Request, res: Response) =
     });
   }
 };
+
+export const updateVehicleLocationController = async (req: Request, res: Response) => {
+  try {
+    const vehicleId = Number(req.params.id);
+    const { lat, lng } = req.body;
+
+    // ✅ Validation
+    if (isNaN(vehicleId)) {
+      return res.status(400).json({
+        message: "Invalid vehicle ID"
+      });
+    }
+
+    if (lat === undefined || lng === undefined) {
+      return res.status(400).json({
+        message: "lat & lng are required"
+      });
+    }
+
+    // ✅ Call service
+    const result = await vehicleService.updateVehicleLocation(
+      vehicleId,
+      Number(lat),
+      Number(lng)
+    );
+
+    res.json({
+      message: "Vehicle location updated",
+      data: result
+    });
+
+  } catch (err: any) {
+
+    if (err.message === "VEHICLE_NOT_FOUND") {
+      return res.status(404).json({
+        message: "Vehicle not found"
+      });
+    }
+
+    res.status(500).json({
+      message: err.message
+    });
+  }
+};

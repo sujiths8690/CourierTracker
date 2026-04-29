@@ -100,7 +100,7 @@ export default function BookingSection({
                 <button
                   className="btn-track"
                   onClick={() => {
-                    setTrackingBooking(b);
+                    setTrackingBooking(b.id);   // 🔥 FIX
                     setPage("tracking");
                   }}
                 >

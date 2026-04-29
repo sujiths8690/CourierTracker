@@ -3,10 +3,10 @@ import { fetchBookingById } from "../redux/features/booking/bookingActions";
 import { selectSelectedBooking } from "../redux/features/booking/bookingSelector";
 import { useEffect, useState, useMemo } from "react";
 import TrackingMap from "../components/TrackingMap";
+import { fetchTrackingLogs } from "../redux/features/tracking/trackingActions";
 import L from "leaflet";
 import truckIconImg from "../assets/truck.png";
 import pickupIconImg from "../assets/pickup.png";
-import { fetchCurrentLocation, fetchTrackingLogs } from "../redux/features/tracking/trackingActions";
 
 
 
@@ -20,9 +20,7 @@ export default function TrackingPage({ bookingId, setPage, t }) {
   console.log("BOOKING ID:", bookingId);
 
   const logs = useSelector(state => state.tracking.logs);
-  console.log("LOGS:", logs);
 
-// ✅ fetch booking
   useEffect(() => {
     if (bookingId) {
       dispatch(fetchBookingById(bookingId));
@@ -35,17 +33,32 @@ export default function TrackingPage({ bookingId, setPage, t }) {
   //   }
   // }, [bookingId, dispatch]);
 
-  // ✅ convert logs → path
   useEffect(() => {
-    if (!logs || logs.length === 0) return;
+  if (!logs || logs.length === 0) return;
 
-    const path = logs.map(l => [l.lat, l.lng]);
+  const path = logs.map(l => [l.lat, l.lng]);
 
-    setCoveredPath(path);
+  setCoveredPath(path);
 
-    // last point = vehicle position
-    setVehiclePos(path[path.length - 1]);
-  }, [logs]);
+  if (path.length > 0) {
+    setVehiclePos(path[path.length - 1]); // last position
+  }
+}, [logs]);
+
+  useEffect(() => {
+    if (!booking) return;
+
+    // priority 1: last known vehicle position
+    if (booking.lastLat && booking.lastLng) {
+      setVehiclePos([booking.lastLat, booking.lastLng]);
+      return;
+    }
+
+    // fallback: pickup location
+    if (booking.pickupLat && booking.pickupLng) {
+      setVehiclePos([booking.pickupLat, booking.pickupLng]);
+    }
+  }, [booking]);
 
   // 🔥 Initialize vehicle position from booking
   useEffect(() => {
@@ -56,29 +69,36 @@ export default function TrackingPage({ bookingId, setPage, t }) {
     ws.onopen = () => {
       console.log("✅ WS Connected");
 
-      // 🔥 IMPORTANT
-      setCoveredPath([]);
-      setVehiclePos(null);
-
+      // 🔵 booking tracking
       ws.send(JSON.stringify({
         type: "SUBSCRIBE",
-        bookingId
+        bookingId: bookingId
+      }));
+
+      // 🔵 vehicle map tracking (IMPORTANT)
+      ws.send(JSON.stringify({
+        type: "SUBSCRIBE_MAP"
       }));
     };
 
     ws.onmessage = (event) => {
       const data = JSON.parse(event.data);
 
-      console.log("📡 WS DATA:", data);
-
       if (data.type === "VEHICLE_LOCATION") {
-        const newPos = [data.lat, data.lng];
+        if (booking?.vehicleId === data.vehicleId) {
+          const newPos = [data.lat, data.lng];
 
-        // ✅ only move marker
-        setVehiclePos(newPos);
+          console.log("WS POS:", data.lat, data.lng);
 
-        // ❌ remove this
-        // setCoveredPath(prev => [...prev, newPos]);
+          setVehiclePos(newPos);
+
+          // 🔥 THIS LINE CREATES GREEN PATH
+          setCoveredPath(prev => [...prev, newPos]);
+        }
+      }
+
+      if (data.type === "TRIP_COMPLETED") {
+        console.log("Trip completed");
       }
     };
 
@@ -90,9 +110,12 @@ export default function TrackingPage({ bookingId, setPage, t }) {
       console.log("🔌 WS Closed");
     };
 
-    return () => ws.close();
+    // ❗ IMPORTANT: only close on unmount
+    return () => {
+      ws.close();
+    };
 
-  }, []); // ✅ ONLY ONCE
+  }, [bookingId, booking?.vehicleId]); // 🔥 ONLY RUN ONCE
 
 
   // 🔥 Dynamic progress (fallback to backend progress if no route)
@@ -106,6 +129,40 @@ export default function TrackingPage({ bookingId, setPage, t }) {
 
     return Math.min((covered / total) * 100, 100);
   }, [coveredPath, booking]);
+
+  const timeline = useMemo(() => {
+    if (!booking) return {};
+
+    const pickupTime =
+      booking.status === "LOADING" ||
+      booking.status === "ONGOING" ||
+      booking.status === "COMPLETED"
+        ? booking.updatedAt
+        : null;
+
+    const departTime =
+      booking.status === "ONGOING" ||
+      booking.status === "COMPLETED"
+        ? booking.updatedAt
+        : null;
+
+    const delivered =
+      booking.status === "COMPLETED";
+
+    const deliveredAt = delivered ? booking.updatedAt : null;
+
+    // ETA fallback
+    const etaTime = new Date();
+    etaTime.setMinutes(etaTime.getMinutes() + 30);
+
+    return {
+      pickupTime,
+      departTime,
+      eta: etaTime,
+      delivered,
+      deliveredAt
+    };
+  }, [booking]);
 
   return (
     <div className="tracking-page" style={{ background: t.bg }}>
@@ -131,85 +188,154 @@ export default function TrackingPage({ bookingId, setPage, t }) {
         </div>
 
         {/* 🔥 MAP (updated with live data) */}
-        <div className="tracking-main">
+        <TrackingMap
+          t={t}
+          booking={booking}
+          vehiclePos={vehiclePos}
+          coveredPath={coveredPath}
+        />
 
-          {/* LEFT SIDE → MAP */}
-          <div className="tracking-left">
-            <div className="card map-card">
-              <TrackingMap
-                t={t}
-                booking={booking}
-                vehiclePos={vehiclePos}
-                coveredPath={coveredPath}
-              />
-            </div>
+        {/* Progress */}
+        <div
+          className="card"
+          style={{ background: t.surface, border: `1px solid ${t.border}` }}
+        >
+          <div className="progress-header">
+            <span style={{ color: t.textMuted, fontSize: 13 }}>
+              Journey Progress
+            </span>
+            <span style={{ fontWeight: 700, fontSize: 22, color: t.text }}>
+              {Math.round(progress)}%
+            </span>
           </div>
 
-          {/* RIGHT SIDE → PROGRESS + MILESTONES */}
-          <div className="tracking-right">
-
-            {/* Progress */}
+          <div
+            className="progress-bar-bg"
+            style={{ background: t.surfaceAlt }}
+          >
             <div
-              className="card"
-              style={{ background: t.surface, border: `1px solid ${t.border}` }}
-            >
-              <div className="progress-header">
-                <span style={{ color: t.textMuted, fontSize: 13 }}>
-                  Journey Progress
-                </span>
-                <span style={{ fontWeight: 700, fontSize: 22, color: t.text }}>
-                  {Math.round(progress)}%
-                </span>
-              </div>
+              className="progress-bar-fill"
+              style={{
+                width: `${progress}%`,
+                background: `linear-gradient(90deg, ${t.accent}, ${t.accentHover || t.accent})`,
+              }}
+            />
+          </div>
 
-              <div className="progress-bar-bg" style={{ background: t.surfaceAlt }}>
+          <div className="info-grid">
+            {[
+              {
+                label: "Reached Pickup",
+                value: timeline.pickupTime
+                  ? new Date(timeline.pickupTime).toLocaleTimeString()
+                  : "Waiting..."
+              },
+              {
+                label: "Departed",
+                value: timeline.departTime
+                  ? new Date(timeline.departTime).toLocaleTimeString()
+                  : "Not yet"
+              },
+              {
+                label: "ETA",
+                value: timeline.delivered
+                  ? "Delivered"
+                  : timeline.eta?.toLocaleTimeString()
+              }
+            ].map(({ label, value }) => (
+              <div
+                key={label}
+                className="info-box"
+                style={{
+                  background: timeline.delivered && label === "ETA"
+                    ? "#22c55e"
+                    : t.surfaceAlt,
+                  color: timeline.delivered && label === "ETA"
+                    ? "#fff"
+                    : t.text
+                }}
+              >
+                <div className="info-label" style={{ color: t.textMuted }}>
+                  {label}
+                </div>
                 <div
-                  className="progress-bar-fill"
-                  style={{
-                    width: `${progress}%`,
-                    background: `linear-gradient(90deg, ${t.accent}, ${t.accent})`,
-                  }}
-                />
+                  className="info-value"
+                  style={{ color: t.text }}
+                  title={
+                    label === "Reached Pickup" && timeline.pickupTime
+                      ? new Date(timeline.pickupTime).toLocaleString()
+                      : label === "Departed" && timeline.departTime
+                      ? new Date(timeline.departTime).toLocaleString()
+                      : ""
+                  }
+                >
+                  {value}
+                </div>
               </div>
-            </div>
-
-            {/* Milestones */}
-            <div
-              className="card"
-              style={{ background: t.surface, border: `1px solid ${t.border}` }}
-            >
-              <div className="milestone-title">Route Milestones</div>
-
-              {["Picked", "In Transit", "Delivered"].map((step, i) => {
-                const done = i < Math.floor(progress / 33);
-                const active = i === Math.floor(progress / 33);
-
-                return (
-                  <div key={step} className="milestone-item">
-                    <div
-                      className="milestone-circle"
-                      style={{
-                        background: done
-                          ? t.success
-                          : active
-                          ? t.accent
-                          : t.surfaceAlt,
-                        color: "#fff",
-                      }}
-                    >
-                      {done ? "✓" : i + 1}
-                    </div>
-
-                    <div>
-                      <div className="milestone-text">{step}</div>
-                      {active && <div className="milestone-active">● In progress</div>}
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-
+            ))}
           </div>
+        </div>
+
+        {/* Milestones */}
+        <div
+          className="card"
+          style={{ background: t.surface, border: `1px solid ${t.border}` }}
+        >
+          <div className="milestone-title" style={{ color: t.textMuted }}>
+            Route Milestones
+          </div>
+
+          {[
+            "Package picked up",
+            "Out for delivery",
+            "Delivered",
+          ].map((step, i) => {
+            const done = i < Math.floor(progress / 33);
+            const active = i === Math.floor(progress / 33);
+
+            return (
+              <div
+                key={step}
+                className={`milestone-item ${i < 3 ? "border-bottom" : ""}`}
+                style={{ borderColor: t.border }}
+              >
+                <div
+                  className="milestone-circle"
+                  style={{
+                    background: done
+                      ? t.success
+                      : active
+                      ? t.accent
+                      : t.surfaceAlt,
+                    color: done || active ? "#fff" : t.textMuted,
+                  }}
+                >
+                  {done ? "✓" : i + 1}
+                </div>
+
+                <div>
+                  <div
+                    className="milestone-text"
+                    style={{
+                      color: done || active ? t.text : t.textMuted,
+                      fontWeight: active ? 600 : 400,
+                    }}
+                  >
+                    {step}
+                  </div>
+
+                  {active && (
+                    <div
+                      className="milestone-active"
+                      style={{ color: t.accent }}
+                    >
+                      ● In progress
+                    </div>
+                  )}
+                </div>
+              </div>
+            );
+          })}
         </div>
 
       </div>

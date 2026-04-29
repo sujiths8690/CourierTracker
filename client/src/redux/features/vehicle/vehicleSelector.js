@@ -12,3 +12,6 @@ export const selectAvailableVehicles = (state) =>
 
 export const selectBusyVehicles = (state) =>
   state.vehicle.vehicles?.filter((v) => v.status === "BUSY");
+
+export const selectNearbyVehicles = (state) =>
+  state.vehicle.nearbyVehicles;

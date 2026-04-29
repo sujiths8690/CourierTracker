@@ -2064,3 +2064,47 @@
 .leaflet-bottom{
   display: none;
 }
+
+.pulse-container {
+  position: relative;
+  width: 20px;
+  height: 20px;
+  overflow: visible; /* 🔥 IMPORTANT */
+}
+
+.pulse-dot {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  position: absolute;
+  top: 4px;
+  left: 4px;
+  z-index: 2;
+}
+
+.pulse-wave {
+  position: absolute;
+  width: 40px;   /* 🔥 bigger */
+  height: 40px;  /* 🔥 bigger */
+  border: 2px solid;
+  border-radius: 50%;
+  top: -10px;    /* 🔥 center align */
+  left: -10px;   /* 🔥 center align */
+  animation: pulseWave 1.5s infinite;
+  opacity: 0.6;
+}
+
+.pulse-wave.delay {
+  animation-delay: 0.6s;
+}
+
+@keyframes pulseWave {
+  0% {
+    transform: scale(0.5);
+    opacity: 0.7;
+  }
+  100% {
+    transform: scale(1.8);
+    opacity: 0;
+  }
+}

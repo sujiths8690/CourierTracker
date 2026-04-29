@@ -5,7 +5,8 @@ import {
   getAllVehicles,
   getVehicleById,
   deleteVehicle,
-  getNearbyVehiclesController  
+  getNearbyVehiclesController,  
+  updateVehicleLocationController
 } from "../../controller/vehicle/vehicle.controller";
 
 import { authenticate } from "../../middleware/auth.middleware";
@@ -22,5 +23,6 @@ router.get("/", authenticate, getAllVehicles);
 router.get("/:id", authenticate, getVehicleById);
 
 router.delete("/:id", authenticate, deleteVehicle);
+router.put("/:id/location", updateVehicleLocationController);
 
 export default router;

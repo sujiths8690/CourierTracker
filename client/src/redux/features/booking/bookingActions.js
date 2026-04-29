@@ -21,6 +21,7 @@ export const fetchBookings = createAsyncThunk(
   async (_, thunkAPI) => {
     try {
       const response = await api.get("/booking");
+      console.log("BOOKING FROM REDUX:", response);
 
       // 🔥 IMPORTANT
       return response.data.data;
@@ -42,6 +43,7 @@ export const fetchBookingById = createAsyncThunk(
   async (id, thunkAPI) => {
     try {
       const response = await api.get(`/booking/${id}`);
+      console.log("BOOKING FROM REDUX:", response);
 
       // 🔥 assuming backend returns: { message, data }
       return response.data.data;

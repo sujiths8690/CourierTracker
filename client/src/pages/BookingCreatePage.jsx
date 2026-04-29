@@ -145,27 +145,7 @@ export default function BookingCreatePage({ setPage, t }) {
 
     return 1; // default
   };
-
-  // find nearest point index on route
-  const findNearestIndex = (route, pos) => {
-    if (!route || !pos) return 0;
-
-    let minDist = Infinity;
-    let index = 0;
-
-    route.forEach((p, i) => {
-      const d =
-        (p[0] - pos[0]) * (p[0] - pos[0]) +
-        (p[1] - pos[1]) * (p[1] - pos[1]);
-
-      if (d < minDist) {
-        minDist = d;
-        index = i;
-      }
-    });
-
-    return index;
-  };
+  
 
   useEffect(() => {
     const t = setTimeout(() => {
