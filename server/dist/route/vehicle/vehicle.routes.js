@@ -12,4 +12,5 @@ router.get("/", auth_middleware_1.authenticate, vehicle_controller_1.getAllVehic
 router.get("/:id", auth_middleware_1.authenticate, vehicle_controller_1.getVehicleById);
 router.delete("/:id", auth_middleware_1.authenticate, vehicle_controller_1.deleteVehicle);
 router.put("/:id/location", vehicle_controller_1.updateVehicleLocationController);
+router.patch("/:id/availability", auth_middleware_1.authenticate, vehicle_controller_1.updateVehicleAvailabilityController);
 exports.default = router;

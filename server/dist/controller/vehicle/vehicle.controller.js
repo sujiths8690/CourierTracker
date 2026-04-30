@@ -23,7 +23,7 @@ var __importStar = (this && this.__importStar) || function (mod) {
     return result;
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.updateVehicleLocationController = exports.getNearbyVehiclesController = exports.deleteVehicle = exports.getVehicleById = exports.getAllVehicles = exports.updateVehicle = exports.createVehicle = void 0;
+exports.updateVehicleAvailabilityController = exports.updateVehicleLocationController = exports.getNearbyVehiclesController = exports.deleteVehicle = exports.getVehicleById = exports.getAllVehicles = exports.updateVehicle = exports.createVehicle = void 0;
 const vehicle_services_1 = __importStar(require("../../service/vehicle/vehicle.services"));
 const createVehicle = async (req, res) => {
     try {
@@ -172,3 +172,42 @@ const updateVehicleLocationController = async (req, res) => {
     }
 };
 exports.updateVehicleLocationController = updateVehicleLocationController;
+const updateVehicleAvailabilityController = async (req, res) => {
+    var _a;
+    try {
+        const vehicleId = Number(req.params.id);
+        const { available, lat, lng } = req.body;
+        const authVehicleId = (_a = req.user) === null || _a === void 0 ? void 0 : _a.vehicleId;
+        if (isNaN(vehicleId)) {
+            return res.status(400).json({
+                message: "Invalid vehicle ID"
+            });
+        }
+        if (authVehicleId && Number(authVehicleId) !== vehicleId) {
+            return res.status(403).json({
+                message: "You can only update your assigned vehicle"
+            });
+        }
+        if (typeof available !== "boolean") {
+            return res.status(400).json({
+                message: "available must be true or false"
+            });
+        }
+        const result = await vehicle_services_1.default.updateVehicleAvailability(vehicleId, available, lat !== undefined ? Number(lat) : undefined, lng !== undefined ? Number(lng) : undefined);
+        res.json({
+            message: available ? "Vehicle marked available" : "Vehicle marked unavailable",
+            data: result
+        });
+    }
+    catch (err) {
+        if (err.message === "VEHICLE_NOT_FOUND") {
+            return res.status(404).json({
+                message: "Vehicle not found"
+            });
+        }
+        res.status(500).json({
+            message: err.message
+        });
+    }
+};
+exports.updateVehicleAvailabilityController = updateVehicleAvailabilityController;

@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
-import { fetchBookings } from "../../redux/features/booking/bookingActions";
-import { selectBookings } from "../../redux/features/booking/bookingSelector";
+import { fetchBookings } from "../../redux/features/userSide/booking/bookingActions";
+import { selectBookings } from "../../redux/features/userSide/booking/bookingSelector";
 import { getBookingProgress } from "../../utils/bookingProgress";
 
 

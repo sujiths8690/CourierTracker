@@ -19,6 +19,8 @@ const authenticate = (req, res, next) => {
         // attach user to request
         req.user = {
             userId: decoded.userId,
+            vehicleUserId: decoded.vehicleUserId,
+            vehicleId: decoded.vehicleId,
             role: decoded.role
         };
         next();

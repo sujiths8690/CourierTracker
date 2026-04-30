@@ -1,12 +1,14 @@
 import { useState, useEffect, useMemo } from "react";
 import MapSection from "../components/MapSection";
 import { useDispatch, useSelector } from "react-redux";
-import { fetchNearbyVehicles } from "../../redux/features/vehicle/vehicleActions";
-import { selectCustomers } from "../../redux/features/customer/customerSelector";
-import { fetchCustomers } from "../../redux/features/customer/customerActions";
-import { updateVehiclePosition } from "../../redux/features/vehicle/vehicleSlice";
+import { fetchNearbyVehicles } from "../../redux/features/userSide/vehicle/vehicleActions";
+import { selectCustomers } from "../../redux/features/userSide/customer/customerSelector";
+import { fetchCustomers } from "../../redux/features/userSide/customer/customerActions";
+import { updateVehiclePosition } from "../../redux/features/userSide/vehicle/vehicleSlice";
 import { getDistanceKm } from "../../utils/distance";
-import { createBooking } from "../../redux/features/booking/bookingActions";
+import { createBooking } from "../../redux/features/userSide/booking/bookingActions";
+import { getSocketUrl } from "../../common/socket";
+import api from "../../common/api";
 
 // ─── Inject theme tokens as CSS custom properties on the root ─────────────────
 // Bridges the `t` prop (JS theme object) into CSS variables so
@@ -113,7 +115,7 @@ function statusClass(status = "") {
 }
 
 // ─── Main component ───────────────────────────────────────────────────────────
-export default function BookingCreatePage({ setPage, t }) {
+export default function BookingCreatePage({ setPage, onBookingAccepted, t }) {
   const dispatch       = useDispatch();
   const nearbyVehicles = useSelector(
     (state) => state.vehicle.nearbyVehicles || []
@@ -146,11 +148,11 @@ export default function BookingCreatePage({ setPage, t }) {
   },[dispatch]);
 
     useEffect(() => {
-        const ws = new WebSocket("ws://192.168.1.84:3003");
+        const ws = new WebSocket(getSocketUrl());
 
         ws.onopen = () => {
             ws.send(JSON.stringify({
-            type: "SUBSCRIBE"
+            type: "SUBSCRIBE_MAP"
             }));
         };
 
@@ -264,6 +266,9 @@ export default function BookingCreatePage({ setPage, t }) {
 
   const [rootEl,     setRootEl]     = useState(null);
   const [submitting, setSubmitting] = useState(false);
+  const [pendingBooking, setPendingBooking] = useState(null);
+  const [pendingStatus, setPendingStatus] = useState("waiting");
+  const [pendingError, setPendingError] = useState("");
   const [step,       setStep]       = useState(1);
   const [form,       setForm]       = useState({
     customerId:    "",
@@ -465,6 +470,7 @@ export default function BookingCreatePage({ setPage, t }) {
   const handleSubmit = async () => {
     try {
       setSubmitting(true);
+      setPendingError("");
 
       const result = await dispatch(createBooking(form));
 
@@ -472,17 +478,59 @@ export default function BookingCreatePage({ setPage, t }) {
 
       if (result.meta.requestStatus === "rejected") {
         console.error("ERROR:", result.payload);
+        setPendingError(result.payload || "Booking creation failed");
       }
 
       if (result.meta.requestStatus === "fulfilled") {
-        setPage("dashboard");
+        setPendingBooking(result.payload.booking);
+        setPendingStatus("waiting");
       }
 
     } catch (err) {
       console.error("Submit error:", err);
+      setPendingError("Something went wrong while creating the booking.");
     } finally {
       setSubmitting(false);
     }
+  };
+
+  useEffect(() => {
+    if (!pendingBooking?.id || pendingStatus !== "waiting") return;
+
+    const checkDriverResponse = async () => {
+      try {
+        const res = await api.get(`/booking/${pendingBooking.id}`);
+        const booking = res.data.data;
+        const status = booking?.status;
+
+        if (["ONGOING", "LOADING", "COMPLETED"].includes(status)) {
+          setPendingStatus("accepted");
+          setPendingBooking(booking);
+          setTimeout(() => {
+            onBookingAccepted?.(booking.id);
+          }, 700);
+          return;
+        }
+
+        if (status === "CANCELLED") {
+          setPendingStatus("rejected");
+          setPendingBooking(booking);
+        }
+      } catch (err) {
+        console.error("Booking status check failed:", err);
+      }
+    };
+
+    checkDriverResponse();
+    const interval = setInterval(checkDriverResponse, 2500);
+
+    return () => clearInterval(interval);
+  }, [onBookingAccepted, pendingBooking?.id, pendingStatus]);
+
+  const handlePendingClose = () => {
+    setPendingBooking(null);
+    setPendingStatus("waiting");
+    setPendingError("");
   };
 
   const validVehicles = vehiclesWithMeta.filter(v => v.distance != null);
@@ -620,11 +668,86 @@ export default function BookingCreatePage({ setPage, t }) {
   // ─── Render ─────────────────────────────────────────────────────────────────
   return (
     <div className="bcp-root" ref={setRootEl}>
+      {pendingBooking && (
+        <div className="bcp-wait-overlay" role="dialog" aria-modal="true">
+          <div className={`bcp-wait-modal is-${pendingStatus}`}>
+            <div className="bcp-wait-visual">
+              {pendingStatus === "waiting" && (
+                <>
+                  <div className="bcp-wait-ring" />
+                  <div className="bcp-wait-truck">
+                    <VehicleIcon type={selectedVehicle?.type} selected={false} />
+                  </div>
+                </>
+              )}
+
+              {pendingStatus === "accepted" && (
+                <div className="bcp-wait-result is-success">
+                  <svg width="34" height="34" viewBox="0 0 34 34" fill="none">
+                    <path d="M8 17.5l6 6L26 10" stroke="currentColor" strokeWidth="3.5" strokeLinecap="round" strokeLinejoin="round" />
+                  </svg>
+                </div>
+              )}
+
+              {pendingStatus === "rejected" && (
+                <div className="bcp-wait-result is-danger">
+                  <svg width="34" height="34" viewBox="0 0 34 34" fill="none">
+                    <path d="M10 10l14 14M24 10L10 24" stroke="currentColor" strokeWidth="3.5" strokeLinecap="round" />
+                  </svg>
+                </div>
+              )}
+            </div>
+
+            <div className="bcp-wait-kicker">
+              {pendingBooking.bookingId || `Booking #${pendingBooking.id}`}
+            </div>
+
+            <h3 className="bcp-wait-title">
+              {pendingStatus === "waiting" && "Waiting for driver confirmation"}
+              {pendingStatus === "accepted" && "Driver accepted your request"}
+              {pendingStatus === "rejected" && "Driver declined this request"}
+            </h3>
+
+            <p className="bcp-wait-copy">
+              {pendingStatus === "waiting" &&
+                `${selectedVehicle?.number || "The selected vehicle"} has received your ride request. Keep this screen open while the driver responds.`}
+              {pendingStatus === "accepted" &&
+                "Opening live tracking with the driver location now."}
+              {pendingStatus === "rejected" &&
+                "Please choose another available vehicle or try again in a moment."}
+            </p>
+
+            <div className="bcp-wait-route">
+              <div>
+                <span>Pickup</span>
+                <strong>{form.pickupAddress || "Selected pickup"}</strong>
+              </div>
+              <div>
+                <span>Destination</span>
+                <strong>{selectedCustomer?.address || "Customer address"}</strong>
+              </div>
+            </div>
+
+            {pendingStatus === "waiting" && (
+              <div className="bcp-wait-progress">
+                <span />
+              </div>
+            )}
+
+            {pendingStatus === "rejected" && (
+              <button className="bcp-wait-btn" onClick={handlePendingClose}>
+                Back to vehicle selection
+              </button>
+            )}
+          </div>
+        </div>
+      )}
+
       <div className="bcp-inner">
 
         {/* ── Top bar ────────────────────────────────────────────────────── */}
         <div className="bcp-topbar">
-          <button className="bcp-back-btn" onClick={() => setPage("dashboard")}>
+          <button className="bcp-back-btn" onClick={() => setPage("app")}>
             <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
               <path d="M9 2L4 7l5 5" stroke="currentColor" strokeWidth="1.8"
                 strokeLinecap="round" strokeLinejoin="round" />

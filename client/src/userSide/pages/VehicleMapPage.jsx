@@ -1,17 +1,17 @@
 import MapSection from "../components/MapSection";
 import { useState, useEffect } from "react";
+import { getSocketUrl } from "../../common/socket";
 
 export default function VehicleMapPage({ vehicle, setPage, t }) {
   const [liveVehicle, setLiveVehicle] = useState(vehicle);
 
   useEffect(() => {
-    const ws = new WebSocket("ws://192.168.1.84:3003");
+    const ws = new WebSocket(getSocketUrl());
 
     ws.onopen = () => {
       console.log("✅ WS CONNECTED");
       ws.send(JSON.stringify({
-        type: "SUBSCRIBE_VEHICLE",
-        vehicleId: vehicle.id   // ✅ THIS WAS MISSING
+        type: "SUBSCRIBE_MAP"
       }));
     };
 

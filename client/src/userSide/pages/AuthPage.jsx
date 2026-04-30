@@ -1,7 +1,7 @@
 import { useDispatch } from "react-redux";
 import BoxStack from "../components/BoxStack";
 import { useState } from "react";
-import { loginUser, registerUser } from "../../redux/features/auth/authActions";
+import { loginUser, registerUser } from "../../redux/features/userSide/auth/authActions";
 import { loginSchema, registerSchema } from "../../validation/auth/authValidation";
 import { toast } from "react-hot-toast";
 

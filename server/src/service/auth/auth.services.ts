@@ -80,3 +80,84 @@ export const loginUser = async (data: any) => {
     token
   };
 };
+
+export const loginVehicleUser = async (data: any) => {
+  const { mobileNumber, phone, password } = data;
+  const rawMobile = String(mobileNumber || phone || "").trim();
+  const loginMobile = rawMobile.replace(/\D/g, "");
+
+  if (!loginMobile || !password) {
+    throw new Error("INVALID_CREDENTIALS");
+  }
+
+  const vehicleUsers = await prisma.vehicleUser.findMany({
+    where: {
+      isActive: true,
+      OR: [
+        { mobileNumber: loginMobile },
+        { mobileNumber: rawMobile },
+        { mobileNumber: { endsWith: loginMobile } }
+      ]
+    },
+    include: {
+      VehicleDetails: true
+    }
+  });
+
+  if (!vehicleUsers.length) {
+    throw new Error("INVALID_CREDENTIALS");
+  }
+
+  const checkPassword = async (storedPassword: string) => {
+    if (storedPassword === password) return true;
+
+    try {
+      return await bcrypt.compare(password, storedPassword);
+    } catch {
+      return false;
+    }
+  };
+
+  const orderedVehicleUsers = [...vehicleUsers].sort((a, b) => {
+    if (a.type === b.type) return 0;
+    return a.type === "DRIVER" ? -1 : 1;
+  });
+
+  let driver = null;
+
+  for (const vehicleUser of orderedVehicleUsers) {
+    if (await checkPassword(vehicleUser.password)) {
+      driver = vehicleUser;
+      break;
+    }
+  }
+
+  if (!driver) {
+    throw new Error("INVALID_CREDENTIALS");
+  }
+
+  const token = jwt.sign(
+    {
+      vehicleUserId: driver.id,
+      vehicleId: driver.vehicleId,
+      role: driver.type
+    },
+    JWT_SECRET,
+    { expiresIn: "7d" }
+  );
+
+  return {
+    driver: {
+      id: driver.id,
+      name: driver.name,
+      phone: driver.mobileNumber,
+      mobileNumber: driver.mobileNumber,
+      type: driver.type,
+      vehicleId: driver.vehicleId,
+      vehicle: driver.VehicleDetails,
+      totalTrips: 0,
+      rating: 4.8
+    },
+    token
+  };
+};

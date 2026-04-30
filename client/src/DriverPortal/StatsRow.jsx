@@ -1,22 +1,21 @@
 // ─── StatsRow.jsx ─────────────────────────────────────────────────────────────
-// Four summary metric cards displayed in a responsive grid at the top of
+// Summary metric cards displayed in a responsive grid at the top of
 // the driver dashboard.
 //
 // Props:
-//   driver      object   – driver data ({ totalTrips, rating })
-//   deliveries  array    – all delivery records used to compute counts
+//   deliveries  array    – vehicle delivery records used to compute counts
 
-export default function StatsRow({ driver, deliveries }) {
+export default function StatsRow({ deliveries }) {
   const completed    = deliveries.filter((d) => d.status === "delivered").length;
-  const active       = deliveries.filter((d) => d.status === "transit" || d.status === "accepted").length;
-  const totalTrips   = driver.totalTrips + deliveries.filter((d) => d.status === "accepted").length;
-  const totalEarning = deliveries.reduce((s, d) => s + (d.earnings || 0), 0);
+  const totalEarning = deliveries
+    .filter((d) => d.status === "delivered")
+    .reduce((s, d) => s + (d.earnings || 0), 0);
 
   const cards = [
     {
       label: "Total Trips",
-      value: totalTrips,
-      sub:   "all time",
+      value: completed,
+      sub:   "completed for this vehicle",
       color: "var(--dp-accent)",
     },
     {
@@ -26,15 +25,9 @@ export default function StatsRow({ driver, deliveries }) {
       color: "var(--dp-success)",
     },
     {
-      label: "Active",
-      value: active,
-      sub:   "in progress",
-      color: "var(--dp-warning)",
-    },
-    {
       label: "Earnings",
       value: `₹${(totalEarning / 1000).toFixed(1)}k`,
-      sub:   "lifetime",
+      sub:   "completed trips",
       color: "var(--dp-info)",
     },
   ];

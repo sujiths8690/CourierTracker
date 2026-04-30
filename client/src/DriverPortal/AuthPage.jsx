@@ -1,44 +1,54 @@
 // ─── AuthPage.jsx ─────────────────────────────────────────────────────────────
 // Driver login page — split layout with a dark hero panel on the left and a
-// clean form on the right. Authenticates against MOCK_DRIVER (swap with API).
+// clean form on the right. Authenticates VehicleUser drivers through Redux.
 //
 // Props:
-//   onLogin      fn(driver)  – called with driver object on success
 //   darkMode     boolean
 //   setDarkMode  fn
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { useDispatch, useSelector } from "react-redux";
 import { useThemeVars } from "./Hooks";
 import { theme } from "./Theme";
-import { MOCK_DRIVER } from "./MockData";
 import { Icon } from "./Helpers";
+import { loginDriver } from "../redux/features/driverSide/auth/authActions";
+import {
+  clearDriverAuthError,
+} from "../redux/features/driverSide/auth/authSlice";
+import {
+  selectDriverAuthError,
+  selectDriverAuthLoading,
+} from "../redux/features/driverSide/auth/authSelector";
 
-export default function AuthPage({ onLogin, darkMode, setDarkMode }) {
+export default function AuthPage({ darkMode, setDarkMode }) {
+  const dispatch = useDispatch();
+  const authLoading = useSelector(selectDriverAuthLoading);
+  const authError = useSelector(selectDriverAuthError);
   const [rootEl,   setRootEl]   = useState(null);
   const [phone,    setPhone]    = useState("");
   const [password, setPassword] = useState("");
-  const [loading,  setLoading]  = useState(false);
   const [error,    setError]    = useState("");
 
   const t = darkMode ? theme.dark : theme.light;
   useThemeVars(rootEl, t);
 
+  useEffect(() => {
+    setError(authError || "");
+  }, [authError]);
+
   const handleLogin = () => {
     setError("");
+    dispatch(clearDriverAuthError());
+
     if (!phone || !password) {
       setError("Please enter your mobile number and password.");
       return;
     }
-    setLoading(true);
-    // Swap this timeout + mock check with a real API call
-    setTimeout(() => {
-      if (phone === MOCK_DRIVER.phone && password === MOCK_DRIVER.password) {
-        onLogin(MOCK_DRIVER);
-      } else {
-        setError("Invalid mobile number or password. Please try again.");
-        setLoading(false);
-      }
-    }, 900);
+
+    dispatch(loginDriver({
+      mobileNumber: phone,
+      password
+    }));
   };
 
   const handleKey = (e) => {
@@ -134,9 +144,9 @@ export default function AuthPage({ onLogin, darkMode, setDarkMode }) {
         <button
           className="dp-submit-btn"
           onClick={handleLogin}
-          disabled={loading}
+          disabled={authLoading}
         >
-          {loading ? (
+          {authLoading ? (
             <>
               {Icon.spinnerSvg}
               Signing in…

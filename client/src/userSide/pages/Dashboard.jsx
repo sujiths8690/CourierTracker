@@ -1,6 +1,6 @@
 import { useEffect } from "react";
 import { useDispatch, useSelector } from "react-redux";
-import { fetchDashboard } from "../../redux/features/dashboard/dashboardActions";
+import { fetchDashboard } from "../../redux/features/userSide/dashboard/dashboardActions";
 import { getBookingProgress } from "../../utils/bookingProgress";
 
 export default function Dashboard({ setTrackingBooking, setPage, t }) {

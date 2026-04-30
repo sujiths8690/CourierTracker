@@ -8,7 +8,7 @@ import {
   createVehicle,
   updateVehicle,
   fetchVehicles
-} from "../../redux/features/vehicle/vehicleActions";
+} from "../../redux/features/userSide/vehicle/vehicleActions";
 
 export default function Modal({
   modal,

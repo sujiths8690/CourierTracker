@@ -10,7 +10,14 @@
 
 import { initials, Icon } from "./Helpers";
 
-export default function Navbar({ driver, darkMode, setDarkMode, onLogout }) {
+export default function Navbar({
+  driver,
+  darkMode,
+  setDarkMode,
+  onLogout,
+  isAvailable,
+  onAvailabilityToggle
+}) {
   return (
     <nav className="dp-navbar">
 
@@ -31,10 +38,14 @@ export default function Navbar({ driver, darkMode, setDarkMode, onLogout }) {
       </div>
 
       {/* Online status */}
-      <div className="dp-online-badge">
+      <button
+        className={`dp-online-badge ${isAvailable ? "is-available" : "is-offline"}`}
+        onClick={onAvailabilityToggle}
+        title={isAvailable ? "Stop receiving ride requests" : "Go available for ride requests"}
+      >
         <div className="dp-online-dot" />
-        Online
-      </div>
+        {isAvailable ? "Available" : "Unavailable"}
+      </button>
 
       {/* Right-side actions */}
       <div className="dp-navbar-right">

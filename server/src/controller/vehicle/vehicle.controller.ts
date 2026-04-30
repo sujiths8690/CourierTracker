@@ -185,3 +185,53 @@ export const updateVehicleLocationController = async (req: Request, res: Respons
     });
   }
 };
+
+export const updateVehicleAvailabilityController = async (req: Request, res: Response) => {
+  try {
+    const vehicleId = Number(req.params.id);
+    const { available, lat, lng } = req.body;
+    const authVehicleId = (req as any).user?.vehicleId;
+
+    if (isNaN(vehicleId)) {
+      return res.status(400).json({
+        message: "Invalid vehicle ID"
+      });
+    }
+
+    if (authVehicleId && Number(authVehicleId) !== vehicleId) {
+      return res.status(403).json({
+        message: "You can only update your assigned vehicle"
+      });
+    }
+
+    if (typeof available !== "boolean") {
+      return res.status(400).json({
+        message: "available must be true or false"
+      });
+    }
+
+    const result = await vehicleService.updateVehicleAvailability(
+      vehicleId,
+      available,
+      lat !== undefined ? Number(lat) : undefined,
+      lng !== undefined ? Number(lng) : undefined
+    );
+
+    res.json({
+      message: available ? "Vehicle marked available" : "Vehicle marked unavailable",
+      data: result
+    });
+
+  } catch (err: any) {
+
+    if (err.message === "VEHICLE_NOT_FOUND") {
+      return res.status(404).json({
+        message: "Vehicle not found"
+      });
+    }
+
+    res.status(500).json({
+      message: err.message
+    });
+  }
+};

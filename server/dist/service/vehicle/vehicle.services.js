@@ -1,8 +1,9 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.updateVehicleLocation = exports.getNearbyVehicles = exports.deleteVehicle = exports.getVehicleById = exports.getAllVehicles = exports.updateVehicle = exports.createVehicle = void 0;
+exports.updateVehicleAvailability = exports.updateVehicleLocation = exports.getNearbyVehicles = exports.deleteVehicle = exports.getVehicleById = exports.getAllVehicles = exports.updateVehicle = exports.createVehicle = void 0;
 const geo_1 = require("../../utils/geo");
 const prisma_1 = require("../../utils/prisma");
+const tracking_socket_1 = require("../../sockets/tracking.socket");
 const createVehicle = async (data) => {
     try {
         const { number, type, pricePerKm, ownerName, ownerMobile, ownerPassword } = data;
@@ -202,7 +203,7 @@ const getNearbyVehicles = async (pickupLat, pickupLng) => {
 };
 exports.getNearbyVehicles = getNearbyVehicles;
 const updateVehicleLocation = async (vehicleId, lat, lng) => {
-    await prisma_1.prisma.vehicleDetails.update({
+    const vehicle = await prisma_1.prisma.vehicleDetails.update({
         where: { id: vehicleId },
         data: {
             lastLat: lat,
@@ -210,8 +211,30 @@ const updateVehicleLocation = async (vehicleId, lat, lng) => {
             lastUpdated: new Date()
         }
     });
+    (0, tracking_socket_1.sendVehicleLocationUpdate)(vehicleId, lat, lng);
+    return vehicle;
 };
 exports.updateVehicleLocation = updateVehicleLocation;
+const updateVehicleAvailability = async (vehicleId, available, lat, lng) => {
+    const vehicle = await prisma_1.prisma.vehicleDetails.update({
+        where: { id: vehicleId },
+        data: {
+            status: available ? "AVAILABLE" : "BUSY",
+            ...(lat !== undefined && lng !== undefined
+                ? {
+                    lastLat: lat,
+                    lastLng: lng,
+                    lastUpdated: new Date()
+                }
+                : {})
+        }
+    });
+    if (lat !== undefined && lng !== undefined) {
+        (0, tracking_socket_1.sendVehicleLocationUpdate)(vehicleId, lat, lng);
+    }
+    return vehicle;
+};
+exports.updateVehicleAvailability = updateVehicleAvailability;
 const vehicleService = {
     createVehicle: exports.createVehicle,
     updateVehicle: exports.updateVehicle,
@@ -219,6 +242,7 @@ const vehicleService = {
     getVehicleById: exports.getVehicleById,
     deleteVehicle: exports.deleteVehicle,
     getNearbyVehicles: exports.getNearbyVehicles,
-    updateVehicleLocation: exports.updateVehicleLocation
+    updateVehicleLocation: exports.updateVehicleLocation,
+    updateVehicleAvailability: exports.updateVehicleAvailability
 };
 exports.default = vehicleService;

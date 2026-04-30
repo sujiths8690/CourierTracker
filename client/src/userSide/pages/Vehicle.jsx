@@ -1,6 +1,6 @@
 import { useEffect } from "react";
 import { useDispatch, useSelector } from "react-redux";
-import { deleteVehicle, fetchVehicles } from "../../redux/features/vehicle/vehicleActions";
+import { deleteVehicle, fetchVehicles } from "../../redux/features/userSide/vehicle/vehicleActions";
 
 import truckImg from "../../assets/truck.png";
 import pickupImg from "../../assets/pickup.png";

@@ -1,5 +1,5 @@
 import { createAsyncThunk } from "@reduxjs/toolkit";
-import API from "../../../common/api";
+import API from "../../../../common/api";
 
 // 📍 UPDATE LOCATION (driver side)
 export const updateLocation = createAsyncThunk(

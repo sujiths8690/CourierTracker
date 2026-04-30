@@ -41,7 +41,7 @@ const updateLocationService = async (data) => {
                 lastLat: lat,
                 lastLng: lng,
                 lastUpdated: new Date(),
-                status: "ONGOING"
+                status: booking.status === "LOADING" ? "LOADING" : "ONGOING"
             }
         });
         // 🔥 ADD THIS BLOCK (VERY IMPORTANT)
@@ -53,6 +53,7 @@ const updateLocationService = async (data) => {
                 lastUpdated: new Date()
             }
         });
+        (0, tracking_socket_1.sendLocationUpdate)(booking.id, lat, lng);
         // 🔥 ALSO ADD THIS (for live map updates)
         (0, tracking_socket_1.sendVehicleLocationUpdate)(booking.vehicleId, lat, lng);
         // check destination

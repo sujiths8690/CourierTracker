@@ -3,7 +3,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.loginUser = exports.registerUser = void 0;
+exports.loginVehicleUser = exports.loginUser = exports.registerUser = void 0;
 const prisma_1 = require("../../utils/prisma");
 const bcrypt_1 = __importDefault(require("bcrypt"));
 const jsonwebtoken_1 = __importDefault(require("jsonwebtoken"));
@@ -65,3 +65,72 @@ const loginUser = async (data) => {
     };
 };
 exports.loginUser = loginUser;
+const loginVehicleUser = async (data) => {
+    const { mobileNumber, phone, password } = data;
+    const rawMobile = String(mobileNumber || phone || "").trim();
+    const loginMobile = rawMobile.replace(/\D/g, "");
+    if (!loginMobile || !password) {
+        throw new Error("INVALID_CREDENTIALS");
+    }
+    const vehicleUsers = await prisma_1.prisma.vehicleUser.findMany({
+        where: {
+            isActive: true,
+            OR: [
+                { mobileNumber: loginMobile },
+                { mobileNumber: rawMobile },
+                { mobileNumber: { endsWith: loginMobile } }
+            ]
+        },
+        include: {
+            VehicleDetails: true
+        }
+    });
+    if (!vehicleUsers.length) {
+        throw new Error("INVALID_CREDENTIALS");
+    }
+    const checkPassword = async (storedPassword) => {
+        if (storedPassword === password)
+            return true;
+        try {
+            return await bcrypt_1.default.compare(password, storedPassword);
+        }
+        catch {
+            return false;
+        }
+    };
+    const orderedVehicleUsers = [...vehicleUsers].sort((a, b) => {
+        if (a.type === b.type)
+            return 0;
+        return a.type === "DRIVER" ? -1 : 1;
+    });
+    let driver = null;
+    for (const vehicleUser of orderedVehicleUsers) {
+        if (await checkPassword(vehicleUser.password)) {
+            driver = vehicleUser;
+            break;
+        }
+    }
+    if (!driver) {
+        throw new Error("INVALID_CREDENTIALS");
+    }
+    const token = jsonwebtoken_1.default.sign({
+        vehicleUserId: driver.id,
+        vehicleId: driver.vehicleId,
+        role: driver.type
+    }, JWT_SECRET, { expiresIn: "7d" });
+    return {
+        driver: {
+            id: driver.id,
+            name: driver.name,
+            phone: driver.mobileNumber,
+            mobileNumber: driver.mobileNumber,
+            type: driver.type,
+            vehicleId: driver.vehicleId,
+            vehicle: driver.VehicleDetails,
+            totalTrips: 0,
+            rating: 4.8
+        },
+        token
+    };
+};
+exports.loginVehicleUser = loginVehicleUser;

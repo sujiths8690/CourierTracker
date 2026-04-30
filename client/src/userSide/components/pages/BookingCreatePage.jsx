@@ -1,12 +1,13 @@
 import { useState, useEffect, useMemo } from "react";
 import MapSection from "../MapSection";
 import { useDispatch, useSelector } from "react-redux";
-import { fetchNearbyVehicles } from "../../../redux/features/vehicle/vehicleActions";
-import { selectCustomers } from "../../../redux/features/customer/customerSelector";
-import { fetchCustomers } from "../../../redux/features/customer/customerActions";
-import { updateVehiclePosition } from "../../../redux/features/vehicle/vehicleSlice";
+import { fetchNearbyVehicles } from "../../../redux/features/userSide/vehicle/vehicleActions";
+import { selectCustomers } from "../../../redux/features/userSide/customer/customerSelector";
+import { fetchCustomers } from "../../../redux/features/userSide/customer/customerActions";
+import { updateVehiclePosition } from "../../../redux/features/userSide/vehicle/vehicleSlice";
 import { getDistanceKm } from "../../../utils/distance";
-import { createBooking } from "../../../redux/features/booking/bookingActions";
+import { createBooking } from "../../../redux/features/userSide/booking/bookingActions";
+import { getSocketUrl } from "../../../common/socket";
 
 // ─── Inject theme tokens as CSS custom properties on the root ─────────────────
 // Bridges the `t` prop (JS theme object) into CSS variables so
@@ -146,11 +147,11 @@ export default function BookingCreatePage({ setPage, t }) {
   },[dispatch]);
 
     useEffect(() => {
-        const ws = new WebSocket("ws://192.168.1.84:3003");
+        const ws = new WebSocket(getSocketUrl());
 
         ws.onopen = () => {
             ws.send(JSON.stringify({
-            type: "SUBSCRIBE"
+            type: "SUBSCRIBE_MAP"
             }));
         };
 

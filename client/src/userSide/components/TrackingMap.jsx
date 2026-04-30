@@ -152,18 +152,14 @@ export default function TrackingMap({ vehiclePos, booking, coveredPath, traffic 
   const fullRoute = (() => {
     if (!booking?.route) return [];
 
-    // before pickup → use vehicle → pickup
-    if (!coveredPath || coveredPath.length === 0) {
-      if (vehiclePos && booking.pickupLat) {
-        return [
-          vehiclePos,
-          [booking.pickupLat, booking.pickupLng],
-          ...booking.route
-        ];
-      }
+    if (booking.status === "ONGOING" && vehiclePos && booking.pickupLat) {
+      return [
+        vehiclePos,
+        [booking.pickupLat, booking.pickupLng],
+        ...booking.route
+      ];
     }
 
-    // after pickup → normal route
     return booking.route;
   })();
 
@@ -233,25 +229,25 @@ export default function TrackingMap({ vehiclePos, booking, coveredPath, traffic 
       {/* 🔵 FULL ROUTE (from booking) - Hide if delivered */}
       {booking?.route && booking.route.length > 0 && booking?.status !== "COMPLETED" && (
         <>
-          {/* 🔲 Outline */}
+          {/* Google-style blue route outline */}
           <Polyline
-            positions={booking.route}
+            positions={fullRoute}
             pathOptions={{
-              color: "#555",
-              weight: 8,
-              opacity: 0.6,
+              color: "#ffffff",
+              weight: 9,
+              opacity: 0.95,
               lineJoin: "round",
               lineCap: "round"
             }}
           />
 
-          {/* ⚪ Main grey */}
+          {/* Main blue route */}
           <Polyline
             positions={fullRoute}
             pathOptions={{
-              color: "#9ca3af",
-              weight: 5,
-              opacity: 0.8,
+              color: "#1a73e8",
+              weight: 6,
+              opacity: 0.95,
               lineJoin: "round",
               lineCap: "round"
             }}
@@ -266,8 +262,8 @@ export default function TrackingMap({ vehiclePos, booking, coveredPath, traffic 
           <Polyline
             positions={coveredPath}
             pathOptions={{
-              color: "#0a5c2e", // dark green
-              weight: 8,
+              color: "#ffffff",
+              weight: 7,
               opacity: 0.9,
               lineJoin: "round",
               lineCap: "round"
@@ -278,7 +274,7 @@ export default function TrackingMap({ vehiclePos, booking, coveredPath, traffic 
           <Polyline
             positions={coveredPath}
             pathOptions={{
-              color: "#22c55e", // bright green
+              color: "#1a73e8",
               weight: 5,
               opacity: 1,
               lineJoin: "round",
@@ -290,7 +286,7 @@ export default function TrackingMap({ vehiclePos, booking, coveredPath, traffic 
           <Polyline
             positions={coveredPath}
             pathOptions={{
-              color: "#86efac", // light green glow
+              color: "#8ab4f8",
               weight: 3,
               dashArray: "10, 20",
               className: "flow-line",
@@ -305,8 +301,8 @@ export default function TrackingMap({ vehiclePos, booking, coveredPath, traffic 
           <Polyline
             positions={deliveryTrail}
             pathOptions={{
-              color: "#0a5c2e",
-              weight: 8,
+              color: "#ffffff",
+              weight: 9,
               opacity: 0.9,
               lineJoin: "round",
               lineCap: "round"
@@ -316,8 +312,8 @@ export default function TrackingMap({ vehiclePos, booking, coveredPath, traffic 
           <Polyline
             positions={deliveryTrail}
             pathOptions={{
-              color: "#22c55e",
-              weight: 5,
+              color: "#1a73e8",
+              weight: 6,
               opacity: 1,
               lineJoin: "round",
               lineCap: "round"
@@ -327,7 +323,7 @@ export default function TrackingMap({ vehiclePos, booking, coveredPath, traffic 
           <Polyline
             positions={deliveryTrail}
             pathOptions={{
-              color: "#86efac",
+              color: "#8ab4f8",
               weight: 3,
               dashArray: "10, 20",
               className: "flow-line",

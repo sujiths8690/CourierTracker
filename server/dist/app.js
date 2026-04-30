@@ -15,7 +15,6 @@ const vehicle_routes_1 = __importDefault(require("./route/vehicle/vehicle.routes
 const tracking_routes_1 = __importDefault(require("./route/tracking/tracking.routes"));
 const customer_route_1 = __importDefault(require("./route/customer/customer.route"));
 const dashboard_routes_1 = __importDefault(require("./route/dashboard/dashboard.routes"));
-const vehicleSimulation_1 = require("./utils/vehicleSimulation");
 dotenv_1.default.config();
 const app = (0, express_1.default)();
 const server = http_1.default.createServer(app);
@@ -24,7 +23,7 @@ const wss = new ws_1.WebSocketServer({ server });
 console.log("DB URL:", process.env.DATABASE_URL);
 app.use((0, cors_1.default)({
     origin: "*",
-    methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+    methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
     allowedHeaders: ["Content-Type", "Authorization"],
 }));
 app.use(express_1.default.json());
@@ -43,5 +42,4 @@ app.get("/health", (_req, res) => {
 const port = Number(process.env.PORT) || 3003;
 server.listen(port, "0.0.0.0", () => {
     console.log(`Server running on ${port}`);
-    (0, vehicleSimulation_1.startVehicleSimulation)();
 });

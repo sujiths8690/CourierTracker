@@ -24,6 +24,8 @@ export const authenticate = (
     // attach user to request
     (req as any).user = {
       userId: decoded.userId,
+      vehicleUserId: decoded.vehicleUserId,
+      vehicleId: decoded.vehicleId,
       role: decoded.role
     };
 

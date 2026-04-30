@@ -1,7 +1,4 @@
-.dp-root,
-.dp-auth-page {
-  min-height: 100vh;
-}
+@import url('https://fonts.googleapis.com/css2?family=Sora:wght@300;400;500;600;700&family=Playfair+Display:ital,wght@0,700;1,600&display=swap');
 
 /* ═══════════════════════════════════════════════════════════════
    DriverPortal.css  —  CourierFlow Driver Interface
@@ -10,7 +7,10 @@
    Prefix : dp-   (driver portal)
 ═══════════════════════════════════════════════════════════════ */
 
-@import url('https://fonts.googleapis.com/css2?family=Sora:wght@300;400;500;600;700&family=Playfair+Display:ital,wght@0,700;1,600&display=swap');
+.dp-root,
+.dp-auth-page {
+  min-height: 100vh;
+}
 
 /* ── Reset helpers ───────────────────────────────────────────── */
 *, *::before, *::after { box-sizing: border-box; }
@@ -382,21 +382,32 @@
   display: flex;
   align-items: center;
   gap: 6px;
-  background: rgba(59, 109, 17, 0.2);
-  border: 1px solid rgba(59, 109, 17, 0.3);
+  border: 1px solid rgba(255,255,255,0.12);
   border-radius: 99px;
   padding: 5px 12px;
   font-size: 12px;
   font-weight: 600;
-  color: var(--dp-success);
   white-space: nowrap;
+  cursor: pointer;
+  transition: border-color 0.2s, background 0.2s, color 0.2s;
+}
+
+.dp-online-badge.is-available {
+  background: rgba(59, 109, 17, 0.2);
+  border-color: rgba(59, 109, 17, 0.3);
+  color: var(--dp-success);
+}
+
+.dp-online-badge.is-offline {
+  background: rgba(255,255,255,0.05);
+  color: var(--dp-sidebar-muted);
 }
 
 .dp-online-dot {
   width: 7px;
   height: 7px;
   border-radius: 50%;
-  background: var(--dp-success);
+  background: currentColor;
   position: relative;
 }
 
@@ -405,8 +416,12 @@
   position: absolute;
   inset: -3px;
   border-radius: 50%;
-  background: var(--dp-success);
+  background: currentColor;
   animation: dp-ping 1.5s ease-out infinite;
+}
+
+.dp-online-badge.is-offline .dp-online-dot::after {
+  display: none;
 }
 
 .dp-navbar-right {
@@ -489,7 +504,7 @@
 /* ── Summary stats row ───────────────────────────────────────── */
 .dp-stats-row {
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
+  grid-template-columns: repeat(3, 1fr);
   gap: 16px;
   margin-bottom: 28px;
 }
@@ -776,6 +791,43 @@
 
 .dp-btn-accept:hover { opacity: 0.88; }
 .dp-btn-accept:active { transform: scale(0.98); }
+.dp-btn-accept:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.dp-btn-delivered {
+  padding: 12px 16px;
+  border-radius: 12px;
+  border: none;
+  background: var(--dp-accent);
+  color: #fff;
+  font-size: 14px;
+  font-weight: 700;
+  font-family: 'Sora', sans-serif;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+}
+
+.dp-btn-route {
+  padding: 12px 16px;
+  border-radius: 12px;
+  border: 1px solid var(--dp-info);
+  background: var(--dp-info-bg);
+  color: var(--dp-info);
+  font-size: 14px;
+  font-weight: 700;
+  font-family: 'Sora', sans-serif;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+}
 
 .dp-btn-reject {
   padding: 12px;
@@ -796,6 +848,168 @@
 
 .dp-btn-reject:hover { background: var(--dp-danger-bg); }
 .dp-btn-reject:active { transform: scale(0.98); }
+
+.dp-trip-controls {
+  margin-bottom: 18px;
+  padding: 18px 20px;
+  border: 1px solid var(--dp-border);
+  border-radius: 14px;
+  background: var(--dp-surface);
+  box-shadow: var(--dp-shadow);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 18px;
+}
+
+.dp-trip-controls-label {
+  margin: 0 0 4px;
+  color: var(--dp-text-muted);
+  font-size: 11px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.7px;
+}
+
+.dp-trip-controls h3 {
+  margin: 0 0 4px;
+  color: var(--dp-text);
+  font-size: 18px;
+}
+
+.dp-trip-controls span {
+  color: var(--dp-text-muted);
+  font-size: 13px;
+}
+
+.dp-trip-control-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+
+.dp-route-map-page {
+  flex: 1;
+  min-height: calc(100vh - 64px);
+  padding: 24px 32px 32px;
+  background: var(--dp-bg);
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.dp-route-map-header {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.dp-route-back {
+  width: 42px;
+  height: 42px;
+  border: 1px solid var(--dp-border);
+  border-radius: 10px;
+  background: var(--dp-surface);
+  color: var(--dp-text);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  cursor: pointer;
+  font-weight: 700;
+}
+
+.dp-route-map-header p {
+  margin: 0 0 2px;
+  color: var(--dp-text-muted);
+  font-size: 12px;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+
+.dp-route-map-header h2 {
+  margin: 0;
+  color: var(--dp-text);
+  font-size: 24px;
+}
+
+.dp-route-map-shell {
+  flex: 1;
+  min-height: 560px;
+  border: 1px solid var(--dp-border);
+  border-radius: 10px;
+  overflow: hidden;
+  box-shadow: var(--dp-shadow);
+  position: relative;
+  background: var(--dp-surface);
+}
+
+.dp-route-map {
+  width: 100%;
+  height: 100%;
+  min-height: 560px;
+}
+
+.dp-route-directions {
+  position: absolute;
+  right: 18px;
+  top: 18px;
+  z-index: 500;
+  width: min(330px, calc(100% - 36px));
+  display: grid;
+  gap: 10px;
+}
+
+.dp-route-direction-card {
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+  padding: 12px 14px;
+  border-radius: 8px;
+  background: rgba(255,255,255,0.94);
+  border: 1px solid rgba(0,0,0,0.08);
+  box-shadow: 0 10px 30px rgba(0,0,0,0.12);
+}
+
+.dp-route-direction-card span {
+  display: block;
+  margin-bottom: 2px;
+  color: #64748b;
+  font-size: 11px;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+
+.dp-route-direction-card strong {
+  display: block;
+  color: #0f172a;
+  font-size: 13px;
+  line-height: 1.35;
+}
+
+.dp-route-map-marker {
+  background: transparent;
+  border: 0;
+}
+
+.dp-route-map-dot {
+  width: 34px;
+  height: 34px;
+  border: 3px solid #fff;
+  border-radius: 50%;
+  background: var(--marker-color);
+  box-shadow: 0 8px 20px rgba(0,0,0,0.24);
+  display: grid;
+  place-items: center;
+}
+
+.dp-route-map-dot span {
+  color: #fff;
+  font-size: 12px;
+  font-weight: 900;
+}
 
 /* ── Empty state ─────────────────────────────────────────────── */
 .dp-empty {

@@ -1,12 +1,12 @@
 import { createAsyncThunk } from "@reduxjs/toolkit";
-import API from "../../../common/api";
+import API from "../../../../common/api";
 
 // ➕ CREATE
-export const createCustomer = createAsyncThunk(
-  "customer/create",
+export const createVehicle = createAsyncThunk(
+  "vehicle/create",
   async (data, thunkAPI) => {
     try {
-      const response = await API.post("/customer", data);
+      const response = await API.post("/vehicle", data);
       return response.data;
     } catch (error) {
       return thunkAPI.rejectWithValue(
@@ -17,13 +17,28 @@ export const createCustomer = createAsyncThunk(
 );
 
 // 📥 GET ALL
-export const fetchCustomers = createAsyncThunk(
-  "customer/fetchAll",
+export const fetchVehicles = createAsyncThunk(
+  "vehicle/fetchAll",
   async (_, thunkAPI) => {
     try {
-      const response = await API.get("/customer");
+      const response = await API.get("/vehicle");
+      return response.data.data;
+    } catch (error) {
+      return thunkAPI.rejectWithValue(
+        error.response?.data?.message || "Fetch failed"
+      );
+    }
+  }
+);
 
-      // ✅ FIX HERE
+export const fetchNearbyVehicles = createAsyncThunk(
+  "vehicle/fetchNearby",
+  async ({ lat, lng }, thunkAPI) => {
+    try {
+      const response = await API.get(
+        `/vehicle/nearby?lat=${lat}&lng=${lng}`
+      );
+
       return response.data.data;
 
     } catch (error) {
@@ -35,11 +50,11 @@ export const fetchCustomers = createAsyncThunk(
 );
 
 // 📄 GET SINGLE
-export const fetchCustomerById = createAsyncThunk(
-  "customer/fetchById",
+export const fetchVehicleById = createAsyncThunk(
+  "vehicle/fetchById",
   async (id, thunkAPI) => {
     try {
-      const response = await API.get(`/customer/${id}`);
+      const response = await API.get(`/vehicle/${id}`);
       return response.data;
     } catch (error) {
       return thunkAPI.rejectWithValue(
@@ -50,12 +65,12 @@ export const fetchCustomerById = createAsyncThunk(
 );
 
 // ✏️ UPDATE
-export const updateCustomer = createAsyncThunk(
-  "customer/update",
+export const updateVehicle = createAsyncThunk(
+  "vehicle/update",
   async ({ id, data }, thunkAPI) => {
     try {
-      const response = await API.put(`/customer/${id}`, data);
-      return response.data;
+      const response = await API.put(`/vehicle/${id}`, data);
+      return response.data.data;
     } catch (error) {
       return thunkAPI.rejectWithValue(
         error.response?.data?.message || "Update failed"
@@ -64,12 +79,12 @@ export const updateCustomer = createAsyncThunk(
   }
 );
 
-// ❌ DELETE (soft delete)
-export const deleteCustomer = createAsyncThunk(
-  "customer/delete",
+// ❌ DELETE (soft)
+export const deleteVehicle = createAsyncThunk(
+  "vehicle/delete",
   async (id, thunkAPI) => {
     try {
-      const response = await API.delete(`/customer/${id}`);
+      const response = await API.delete(`/vehicle/${id}`);
       return { id, message: response.data.message };
     } catch (error) {
       return thunkAPI.rejectWithValue(

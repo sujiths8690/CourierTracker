@@ -6,7 +6,7 @@
 //   deliveries  array   – list of delivery objects
 //   driver      object  – driver info (used for rating display)
 
-import { pillClass, initials, Icon } from "./Helpers";
+import { pillClass, Icon } from "./Helpers";
 
 // ─── Progress bar cell ────────────────────────────────────────────────────────
 function ProgressCell({ progress }) {
@@ -94,7 +94,14 @@ function EarningsSummary({ deliveries, driver }) {
 }
 
 // ─── Main export ──────────────────────────────────────────────────────────────
-export default function DeliveryHistoryTab({ deliveries, driver }) {
+export default function DeliveryHistoryTab({
+  deliveries,
+  driver,
+  activeTrip,
+  onOpenRouteMap,
+  onConfirmPickup,
+  onConfirmDelivered
+}) {
   if (deliveries.length === 0) {
     return (
       <>
@@ -110,6 +117,45 @@ export default function DeliveryHistoryTab({ deliveries, driver }) {
   return (
     <>
       <h2 className="dp-section-title">Delivery History</h2>
+
+      {activeTrip && (
+        <div className="dp-trip-controls">
+          <div>
+            <p className="dp-trip-controls-label">Active trip</p>
+            <h3>{activeTrip.bookingId || `Booking #${activeTrip.id}`}</h3>
+            <span>
+              {activeTrip.status === "LOADING"
+                ? "Pickup confirmed. Confirm delivery after drop-off."
+                : "Heading to pickup. Confirm when the package is collected."}
+            </span>
+          </div>
+
+          <div className="dp-trip-control-actions">
+            <button
+              className="dp-btn-route"
+              onClick={onOpenRouteMap}
+            >
+              {Icon.location("currentColor")}
+              View Directions
+            </button>
+            <button
+              className="dp-btn-accept"
+              onClick={onConfirmPickup}
+              disabled={activeTrip.status === "LOADING"}
+            >
+              {Icon.check}
+              Confirm Pickup
+            </button>
+            <button
+              className="dp-btn-delivered"
+              onClick={onConfirmDelivered}
+            >
+              {Icon.check}
+              Mark Delivered
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* Scrollable table wrapper */}
       <div style={{ overflowX: "auto" }}>

@@ -1,10 +1,11 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.getAllBookings = exports.getBookingById = exports.updateBooking = exports.createBooking = void 0;
+exports.getAllBookings = exports.getBookingById = exports.confirmDriverDelivery = exports.confirmDriverPickup = exports.rejectDriverBooking = exports.acceptDriverBooking = exports.getDriverBookingHistory = exports.getPendingBookingsForVehicle = exports.updateBooking = exports.createBooking = void 0;
 const prisma_1 = require("../../utils/prisma");
 const uuid_1 = require("uuid");
 const distance_1 = require("../../utils/distance");
 const getRoute_1 = require("../../utils/getRoute");
+const tracking_socket_1 = require("../../sockets/tracking.socket");
 const createBooking = async (data) => {
     try {
         const { vehicleId, pickupLat, pickupLng, pickupAddress, customerId, userId } = data;
@@ -137,6 +138,257 @@ const updateBooking = async (bookingId, data) => {
     }
 };
 exports.updateBooking = updateBooking;
+const getPendingBookingsForVehicle = async (vehicleId) => {
+    try {
+        return await prisma_1.prisma.vehicleBooking.findMany({
+            where: {
+                vehicleId,
+                status: "PENDING",
+                isActive: true
+            },
+            orderBy: {
+                createdAt: "desc"
+            },
+            include: {
+                Customer: true,
+                VehicleDetails: true
+            }
+        });
+    }
+    catch (err) {
+        console.error("Error fetching driver bookings", err);
+        throw err;
+    }
+};
+exports.getPendingBookingsForVehicle = getPendingBookingsForVehicle;
+const getDriverBookingHistory = async (vehicleId) => {
+    try {
+        return await prisma_1.prisma.vehicleBooking.findMany({
+            where: {
+                vehicleId,
+                status: {
+                    in: ["ONGOING", "LOADING", "COMPLETED"]
+                }
+            },
+            orderBy: {
+                updatedAt: "desc"
+            },
+            include: {
+                Customer: true,
+                VehicleDetails: true
+            }
+        });
+    }
+    catch (err) {
+        console.error("Error fetching driver booking history", err);
+        throw err;
+    }
+};
+exports.getDriverBookingHistory = getDriverBookingHistory;
+const acceptDriverBooking = async (bookingId, vehicleId, lat, lng) => {
+    try {
+        const booking = await prisma_1.prisma.vehicleBooking.findFirst({
+            where: {
+                id: bookingId,
+                vehicleId,
+                status: "PENDING",
+                isActive: true
+            }
+        });
+        if (!booking)
+            throw new Error("BOOKING_NOT_FOUND");
+        const updated = await prisma_1.prisma.$transaction(async (tx) => {
+            await tx.trackingLog.create({
+                data: {
+                    bookingId,
+                    lat,
+                    lng
+                }
+            });
+            await tx.vehicleDetails.update({
+                where: { id: vehicleId },
+                data: {
+                    status: "BUSY",
+                    lastLat: lat,
+                    lastLng: lng,
+                    lastUpdated: new Date()
+                }
+            });
+            return tx.vehicleBooking.update({
+                where: { id: bookingId },
+                data: {
+                    status: "ONGOING",
+                    lastLat: lat,
+                    lastLng: lng,
+                    lastUpdated: new Date()
+                },
+                include: {
+                    Customer: true,
+                    VehicleDetails: true
+                }
+            });
+        });
+        (0, tracking_socket_1.sendLocationUpdate)(bookingId, lat, lng);
+        (0, tracking_socket_1.sendVehicleLocationUpdate)(vehicleId, lat, lng);
+        return updated;
+    }
+    catch (err) {
+        console.error("Error accepting driver booking", err);
+        throw err;
+    }
+};
+exports.acceptDriverBooking = acceptDriverBooking;
+const rejectDriverBooking = async (bookingId, vehicleId) => {
+    try {
+        const booking = await prisma_1.prisma.vehicleBooking.findFirst({
+            where: {
+                id: bookingId,
+                vehicleId,
+                status: "PENDING",
+                isActive: true
+            }
+        });
+        if (!booking)
+            throw new Error("BOOKING_NOT_FOUND");
+        const updated = await prisma_1.prisma.$transaction(async (tx) => {
+            await tx.vehicleDetails.update({
+                where: { id: vehicleId },
+                data: { status: "AVAILABLE" }
+            });
+            return tx.vehicleBooking.update({
+                where: { id: bookingId },
+                data: {
+                    status: "CANCELLED",
+                    isActive: false
+                }
+            });
+        });
+        return updated;
+    }
+    catch (err) {
+        console.error("Error rejecting driver booking", err);
+        throw err;
+    }
+};
+exports.rejectDriverBooking = rejectDriverBooking;
+const confirmDriverPickup = async (bookingId, vehicleId, lat, lng) => {
+    try {
+        const booking = await prisma_1.prisma.vehicleBooking.findFirst({
+            where: {
+                id: bookingId,
+                vehicleId,
+                status: "ONGOING",
+                isActive: true
+            }
+        });
+        if (!booking)
+            throw new Error("BOOKING_NOT_FOUND");
+        const updateLocation = lat !== undefined && lng !== undefined;
+        const updated = await prisma_1.prisma.$transaction(async (tx) => {
+            if (updateLocation) {
+                await tx.trackingLog.create({
+                    data: {
+                        bookingId,
+                        lat,
+                        lng
+                    }
+                });
+                await tx.vehicleDetails.update({
+                    where: { id: vehicleId },
+                    data: {
+                        lastLat: lat,
+                        lastLng: lng,
+                        lastUpdated: new Date()
+                    }
+                });
+            }
+            return tx.vehicleBooking.update({
+                where: { id: bookingId },
+                data: {
+                    status: "LOADING",
+                    ...(updateLocation
+                        ? {
+                            lastLat: lat,
+                            lastLng: lng,
+                            lastUpdated: new Date()
+                        }
+                        : {})
+                },
+                include: {
+                    Customer: true,
+                    VehicleDetails: true
+                }
+            });
+        });
+        if (updateLocation) {
+            (0, tracking_socket_1.sendLocationUpdate)(bookingId, lat, lng);
+            (0, tracking_socket_1.sendVehicleLocationUpdate)(vehicleId, lat, lng);
+        }
+        return updated;
+    }
+    catch (err) {
+        console.error("Error confirming pickup", err);
+        throw err;
+    }
+};
+exports.confirmDriverPickup = confirmDriverPickup;
+const confirmDriverDelivery = async (bookingId, vehicleId, lat, lng) => {
+    try {
+        const booking = await prisma_1.prisma.vehicleBooking.findFirst({
+            where: {
+                id: bookingId,
+                vehicleId,
+                status: { in: ["ONGOING", "LOADING"] },
+                isActive: true
+            }
+        });
+        if (!booking)
+            throw new Error("BOOKING_NOT_FOUND");
+        const finalLat = lat !== null && lat !== void 0 ? lat : booking.destLat;
+        const finalLng = lng !== null && lng !== void 0 ? lng : booking.destLng;
+        const updated = await prisma_1.prisma.$transaction(async (tx) => {
+            await tx.trackingLog.create({
+                data: {
+                    bookingId,
+                    lat: finalLat,
+                    lng: finalLng
+                }
+            });
+            await tx.vehicleDetails.update({
+                where: { id: vehicleId },
+                data: {
+                    status: "AVAILABLE",
+                    lastLat: finalLat,
+                    lastLng: finalLng,
+                    lastUpdated: new Date()
+                }
+            });
+            return tx.vehicleBooking.update({
+                where: { id: bookingId },
+                data: {
+                    status: "COMPLETED",
+                    isActive: false,
+                    lastLat: finalLat,
+                    lastLng: finalLng,
+                    lastUpdated: new Date()
+                },
+                include: {
+                    Customer: true,
+                    VehicleDetails: true
+                }
+            });
+        });
+        (0, tracking_socket_1.sendLocationUpdate)(bookingId, finalLat, finalLng);
+        (0, tracking_socket_1.sendVehicleLocationUpdate)(vehicleId, finalLat, finalLng);
+        (0, tracking_socket_1.sendTripCompleted)(bookingId);
+        return updated;
+    }
+    catch (err) {
+        console.error("Error confirming delivery", err);
+        throw err;
+    }
+};
+exports.confirmDriverDelivery = confirmDriverDelivery;
 const getBookingById = async (bookingId) => {
     try {
         const booking = await prisma_1.prisma.vehicleBooking.findUnique({

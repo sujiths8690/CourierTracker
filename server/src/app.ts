@@ -12,7 +12,6 @@ import vehicleRoutes from "./route/vehicle/vehicle.routes";
 import trackingRoutes from "./route/tracking/tracking.routes";
 import customerRoutes from "./route/customer/customer.route";
 import dashboardRoutes from "./route/dashboard/dashboard.routes";
-import { startVehicleSimulation } from "./utils/vehicleSimulation";
 
 dotenv.config();
 
@@ -27,7 +26,7 @@ console.log("DB URL:", process.env.DATABASE_URL);
 
 app.use(cors({
   origin: "*",
-  methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+  methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
   allowedHeaders: ["Content-Type", "Authorization"],
 }));
 
@@ -52,6 +51,4 @@ const port = Number(process.env.PORT) || 3003;
 
 server.listen(port, "0.0.0.0", () => {
   console.log(`Server running on ${port}`);
-
-  startVehicleSimulation();
 });

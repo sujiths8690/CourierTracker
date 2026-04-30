@@ -1,12 +1,13 @@
 import { useDispatch, useSelector } from "react-redux";
-import { fetchBookingById } from "../../redux/features/booking/bookingActions";
-import { selectSelectedBooking } from "../../redux/features/booking/bookingSelector";
+import { fetchBookingById } from "../../redux/features/userSide/booking/bookingActions";
+import { selectSelectedBooking } from "../../redux/features/userSide/booking/bookingSelector";
 import { useEffect, useState, useMemo, useRef, useCallback } from "react";
 import TrackingMap from "../components/TrackingMap";
-import { fetchTrackingLogs } from "../../redux/features/tracking/trackingActions";
+import { fetchTrackingLogs } from "../../redux/features/userSide/tracking/trackingActions";
 import { getDistanceKm } from "../../utils/distance";
-import { clearTrackingData } from "../../redux/features/tracking/trackingSlice";
-import { clearBooking } from "../../redux/features/booking/bookingSlice";
+import { clearTrackingData } from "../../redux/features/userSide/tracking/trackingSlice";
+import { clearBooking } from "../../redux/features/userSide/booking/bookingSlice";
+import { getSocketUrl } from "../../common/socket";
 
 const AVERAGE_SPEED_KMPH = 30;
 const PICKUP_REACHED_THRESHOLD_KM = 0.06;
@@ -391,7 +392,7 @@ export default function TrackingPage({ bookingId, setPage, t }) {
   useEffect(() => {
     if (!bookingId) return;
 
-    const ws = new WebSocket("ws://192.168.1.84:3003");
+    const ws = new WebSocket(getSocketUrl());
 
     ws.onopen = () => {
       console.log("✅ WS Connected");
@@ -430,6 +431,20 @@ export default function TrackingPage({ bookingId, setPage, t }) {
           // 🔥 THIS LINE CREATES GREEN PATH
           updateCoveredPath((previousPath) => mergePaths(previousPath, [newPos]));
         }
+      }
+
+      if (data.type === "LOCATION_UPDATE") {
+        if (booking?.status === "COMPLETED") return;
+
+        const newPos = [data.lat, data.lng];
+
+        setLatestVehiclePos(newPos, Date.now(), "websocket-booking");
+        updateMovementSamples([{
+          lat: data.lat,
+          lng: data.lng,
+          time: Date.now()
+        }]);
+        updateCoveredPath((previousPath) => mergePaths(previousPath, [newPos]));
       }
 
       if (data.type === "TRIP_COMPLETED") {
@@ -506,7 +521,7 @@ export default function TrackingPage({ bookingId, setPage, t }) {
       setPickupReachedAt(bookingUpdatedAt);
     }
 
-    if (!departedAt && status === "COMPLETED") {
+    if (!departedAt && ["LOADING", "COMPLETED"].includes(status)) {
       setDepartedAt(bookingUpdatedAt);
     }
 
@@ -638,7 +653,7 @@ export default function TrackingPage({ bookingId, setPage, t }) {
 
   const infoCards = [
     {
-      label: "Reached Pickup",
+      label: "Picked Up",
       value: timeline.pickupTime
         ? formatDateTime(timeline.pickupTime)
         : "Waiting...",
@@ -650,7 +665,7 @@ export default function TrackingPage({ bookingId, setPage, t }) {
       value: timeline.departTime
         ? formatDateTime(timeline.departTime)
         : "Not yet",
-      helper: timeline.pickupTime ? "Loaded and moving" : "After pickup",
+      helper: timeline.pickupTime ? "Package collected" : "After pickup",
       complete: Boolean(timeline.departTime)
     },
     {
@@ -666,7 +681,7 @@ export default function TrackingPage({ bookingId, setPage, t }) {
 
   const milestones = [
     {
-      label: "Package picked up",
+      label: "Picked up",
       done: Boolean(timeline.pickupTime),
       active: !timeline.pickupTime,
       activeText: "Heading to pickup"
@@ -712,7 +727,7 @@ export default function TrackingPage({ bookingId, setPage, t }) {
     }
 
     if (pickupReachedAt) {
-      return `Reached ${pickupPlace}. Next ${destinationPlace} after loading. Traffic: ${traffic.label}, ${traffic.detail}.`;
+      return `Picked up from ${pickupPlace}. Next ${destinationPlace} in ${distanceText}. Traffic: ${traffic.label}, ${traffic.detail}.`;
     }
 
     return `Vehicle near ${currentTown}. Pickup at ${nextPlace} in ${distanceText}. Traffic: ${traffic.label}, ${traffic.detail}.`;

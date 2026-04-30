@@ -1,5 +1,5 @@
 import { createAsyncThunk } from "@reduxjs/toolkit";
-import API from "../../../common/api";
+import API from "../../../../common/api";
 
 // 🔥 Fetch Dashboard Data
 export const fetchDashboard = createAsyncThunk(

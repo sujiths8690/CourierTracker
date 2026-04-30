@@ -11,7 +11,7 @@ import Modal from "./Modal";
 import BookingCreatePage from "../pages/BookingCreatePage"; 
 
 import { useDispatch } from "react-redux";
-import { createCustomer, updateCustomer } from "../../redux/features/customer/customerActions";
+import { createCustomer, updateCustomer } from "../../redux/features/userSide/customer/customerActions";
 import toast from "react-hot-toast";
 
 export default function MainApp(props) {
@@ -98,6 +98,10 @@ export default function MainApp(props) {
         customers={customers}
         vehicles={vehicles}
         setPage={setLocalPage}
+        onBookingAccepted={(bookingId) => {
+          setTrackingVehicle(bookingId);
+          setLocalPage("tracking");
+        }}
         createBooking={(data) => {
           console.log("CREATE BOOKING:", data);
           // 👉 you can connect API later

@@ -1,6 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.login = exports.register = void 0;
+exports.driverLogin = exports.login = exports.register = void 0;
 const auth_services_1 = require("../../service/auth/auth.services");
 const register = async (req, res) => {
     try {
@@ -34,3 +34,19 @@ const login = async (req, res) => {
     }
 };
 exports.login = login;
+const driverLogin = async (req, res) => {
+    try {
+        const result = await (0, auth_services_1.loginVehicleUser)(req.body);
+        res.json({
+            message: "Driver login successful",
+            ...result
+        });
+    }
+    catch (err) {
+        if (err.message === "INVALID_CREDENTIALS") {
+            return res.status(401).json({ message: "Invalid mobile number or password" });
+        }
+        res.status(500).json({ message: err.message });
+    }
+};
+exports.driverLogin = driverLogin;

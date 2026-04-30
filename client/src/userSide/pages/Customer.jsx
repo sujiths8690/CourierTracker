@@ -1,7 +1,7 @@
 // components/CustomerSection.jsx
 import { useEffect } from "react";
 import { useDispatch, useSelector } from "react-redux";
-import { fetchCustomers, deleteCustomer } from "../../redux/features/customer/customerActions";
+import { fetchCustomers, deleteCustomer } from "../../redux/features/userSide/customer/customerActions";
 
 export default function CustomerSection({ openModal, t }) {
 

@@ -3,14 +3,14 @@ import { useState, useEffect } from "react";
 import theme from "./theme/theme";
 import { mockCustomers, mockVehicles, mockBookings } from "./data/mockData";
 import { useSelector } from "react-redux";
-import { selectAuthUser } from "./redux/features/auth/authSelector";
+import { selectAuthUser } from "./redux/features/userSide/auth/authSelector";
 import "leaflet/dist/leaflet.css";
 
 import AuthPage from "./userSide/pages/AuthPage";
 import TrackingPage from "./userSide/pages/TrackingPage";
 import MainApp from "./userSide/components/MainApp";
 import DriverPortal from "./DriverPortal/DriverPortal";
-import { selectAuthToken } from "./redux/features/auth/authSelector";
+import { selectAuthToken } from "./redux/features/userSide/auth/authSelector";
 
 export default function App() {
   const isDriverRoute = window.location.pathname === "/driver";

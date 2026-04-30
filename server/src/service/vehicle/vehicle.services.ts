@@ -1,6 +1,7 @@
 import { getDistance } from "../../utils/geo";
 import { prisma } from "../../utils/prisma";
 import { VehicleDetails_status, VehicleDetails_type } from "@prisma/client";
+import { sendVehicleLocationUpdate } from "../../sockets/tracking.socket";
 
 interface VehicleInput {
   number: string;
@@ -277,7 +278,7 @@ export const updateVehicleLocation = async (
   lat: number,
   lng: number
 ) => {
-  await prisma.vehicleDetails.update({
+  const vehicle = await prisma.vehicleDetails.update({
     where: { id: vehicleId },
     data: {
       lastLat: lat,
@@ -285,6 +286,37 @@ export const updateVehicleLocation = async (
       lastUpdated: new Date()
     }
   });
+
+  sendVehicleLocationUpdate(vehicleId, lat, lng);
+
+  return vehicle;
+};
+
+export const updateVehicleAvailability = async (
+  vehicleId: number,
+  available: boolean,
+  lat?: number,
+  lng?: number
+) => {
+  const vehicle = await prisma.vehicleDetails.update({
+    where: { id: vehicleId },
+    data: {
+      status: available ? "AVAILABLE" : "BUSY",
+      ...(lat !== undefined && lng !== undefined
+        ? {
+            lastLat: lat,
+            lastLng: lng,
+            lastUpdated: new Date()
+          }
+        : {})
+    }
+  });
+
+  if (lat !== undefined && lng !== undefined) {
+    sendVehicleLocationUpdate(vehicleId, lat, lng);
+  }
+
+  return vehicle;
 };
 
 const vehicleService = {
@@ -294,7 +326,8 @@ const vehicleService = {
   getVehicleById,
   deleteVehicle,
   getNearbyVehicles,
-  updateVehicleLocation
+  updateVehicleLocation,
+  updateVehicleAvailability
 };
 
 export default vehicleService;

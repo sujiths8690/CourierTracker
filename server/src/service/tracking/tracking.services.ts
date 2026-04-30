@@ -1,6 +1,9 @@
 import { prisma } from "../../utils/prisma";
 import { getDistance } from "../../utils/geo";
-import { sendVehicleLocationUpdate } from "../../sockets/tracking.socket";
+import {
+  sendLocationUpdate,
+  sendVehicleLocationUpdate
+} from "../../sockets/tracking.socket";
 
 interface LocationInput {
   bookingId: number;
@@ -58,7 +61,7 @@ export const updateLocationService = async (data: LocationInput) => {
         lastLat: lat,
         lastLng: lng,
         lastUpdated: new Date(),
-        status: "ONGOING"
+        status: booking.status === "LOADING" ? "LOADING" : "ONGOING"
       }
     });
 
@@ -71,6 +74,8 @@ export const updateLocationService = async (data: LocationInput) => {
         lastUpdated: new Date()
       }
     });
+
+    sendLocationUpdate(booking.id, lat, lng);
 
     // 🔥 ALSO ADD THIS (for live map updates)
     sendVehicleLocationUpdate(booking.vehicleId, lat, lng);
