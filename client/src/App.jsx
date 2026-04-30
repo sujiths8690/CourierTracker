@@ -6,12 +6,14 @@ import { useSelector } from "react-redux";
 import { selectAuthUser } from "./redux/features/auth/authSelector";
 import "leaflet/dist/leaflet.css";
 
-import AuthPage from "./pages/AuthPage";
-import TrackingPage from "./pages/TrackingPage";
-import MainApp from "./components/MainApp";
+import AuthPage from "./userSide/pages/AuthPage";
+import TrackingPage from "./userSide/pages/TrackingPage";
+import MainApp from "./userSide/components/MainApp";
+import DriverPortal from "./DriverPortal/DriverPortal";
 import { selectAuthToken } from "./redux/features/auth/authSelector";
 
 export default function App() {
+  const isDriverRoute = window.location.pathname === "/driver";
   const [darkMode, setDarkMode] = useState(false);
   const token = useSelector(selectAuthToken);
   const [page, setPage] = useState("dashboard");
@@ -45,6 +47,9 @@ export default function App() {
     return () => document.head.removeChild(style);
   }, []);
 
+  if (isDriverRoute) {
+    return <DriverPortal />;
+  }
 
   // Shared CRUD handlers
   const saveCustomer = (newCustomer) => {

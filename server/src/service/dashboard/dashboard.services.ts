@@ -33,12 +33,25 @@ export const getDashboardData = async () => {
       where: { status: "AVAILABLE" }
     });
 
+    const availableVehicleDetails= await prisma.vehicleDetails.findMany({
+      where:{
+        status: "AVAILABLE"
+      }
+    });
+
     const busyVehicles = await prisma.vehicleDetails.count({
       where: { status: "BUSY" }
     });
 
-    // 🔹 RECENT BOOKINGS (for table)
-    const recentBookings = await prisma.vehicleBooking.findMany({
+    // 🔹 DASHBOARD BOOKINGS
+    // Show live orders first; if none are running, show the last 3 completed orders.
+    const liveBookings = await prisma.vehicleBooking.findMany({
+      where: {
+        status: {
+          in: ["PENDING", "LOADING", "ONGOING"]
+        },
+        isActive: true
+      },
       take: 5,
       orderBy: { createdAt: "desc" },
       include: {
@@ -46,6 +59,20 @@ export const getDashboardData = async () => {
         VehicleDetails: true
       }
     });
+
+    const recentBookings = liveBookings.length > 0
+      ? liveBookings
+      : await prisma.vehicleBooking.findMany({
+          where: {
+            status: "COMPLETED"
+          },
+          take: 3,
+          orderBy: { updatedAt: "desc" },
+          include: {
+            Customer: true,
+            VehicleDetails: true
+          }
+        });
 
     // 🔹 ACTIVE TRIPS (map / live view)
     const activeTrips = await prisma.vehicleBooking.findMany({
@@ -78,11 +105,7 @@ export const getDashboardData = async () => {
       recentBookings,
 
       // 🔥 ACTIVE VEHICLES (convert from activeTrips)
-      activeVehicles: activeTrips.map(trip => ({
-        id: trip.id,
-        number: trip.VehicleDetails?.number,
-        status: "ONGOING"
-      })),
+      activeVehicles: availableVehicleDetails,
 
       // 🔥 RECENT CUSTOMERS (ADD THIS)
       recentCustomers: await prisma.customer.findMany({

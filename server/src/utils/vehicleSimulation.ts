@@ -1,5 +1,5 @@
 import { updateVehicleLocation } from "../service/vehicle/vehicle.services";
-import { sendLocationUpdate, sendVehicleLocationUpdate } from "../sockets/tracking.socket";
+import { sendLocationUpdate, sendTripCompleted, sendVehicleLocationUpdate } from "../sockets/tracking.socket";
 import { prisma } from "../utils/prisma";
 import { getDistance } from "./geo";
 
@@ -10,6 +10,43 @@ const loadingStartTime: Record<string, number> = {};
 // ✅ LOCKS
 const pickupReachedMap: Record<string, boolean> = {};
 const destinationReachedMap: Record<string, boolean> = {};
+
+const completeBookingAtDestination = async (booking: any) => {
+  await prisma.$transaction(async (tx) => {
+    await tx.vehicleBooking.update({
+      where: { id: booking.id },
+      data: {
+        status: "COMPLETED",
+        isActive: false,
+        lastLat: booking.destLat,
+        lastLng: booking.destLng,
+        lastUpdated: new Date()
+      },
+    });
+
+    await tx.vehicleDetails.update({
+      where: { id: booking.vehicleId },
+      data: {
+        status: "AVAILABLE",
+        lastLat: booking.destLat,
+        lastLng: booking.destLng,
+        lastUpdated: new Date()
+      },
+    });
+
+    await tx.trackingLog.create({
+      data: {
+        bookingId: booking.id,
+        lat: booking.destLat,
+        lng: booking.destLng,
+      },
+    });
+  });
+
+  sendLocationUpdate(booking.id, booking.destLat, booking.destLng);
+  sendVehicleLocationUpdate(booking.vehicleId, booking.destLat, booking.destLng);
+  sendTripCompleted(booking.id);
+};
 
 const getRoute = async (start: any, end: any) => {
   try {
@@ -65,10 +102,7 @@ export const startVehicleSimulation = async () => {
 
             console.log("📦 FINAL DESTINATION REACHED");
 
-            await prisma.vehicleBooking.update({
-              where: { id: booking.id },
-              data: { status: "COMPLETED", isActive: false },
-            });
+            await completeBookingAtDestination(booking);
           }
 
           continue; // 🚫 STOP MOVEMENT
@@ -168,10 +202,7 @@ export const startVehicleSimulation = async () => {
 
               destinationReachedMap[cacheKey] = true;
 
-              await prisma.vehicleBooking.update({
-                where: { id: booking.id },
-                data: { status: "COMPLETED", isActive: false },
-              });
+              await completeBookingAtDestination(booking);
 
               continue;
             }
@@ -212,10 +243,7 @@ export const startVehicleSimulation = async () => {
 
               destinationReachedMap[cacheKey] = true;
 
-              await prisma.vehicleBooking.update({
-                where: { id: booking.id },
-                data: { status: "COMPLETED", isActive: false },
-              });
+              await completeBookingAtDestination(booking);
 
               continue;
             }
@@ -279,10 +307,7 @@ export const startVehicleSimulation = async () => {
 
             destinationReachedMap[cacheKey] = true;
 
-            await prisma.vehicleBooking.update({
-              where: { id: booking.id },
-              data: { status: "COMPLETED", isActive: false },
-            });
+            await completeBookingAtDestination(booking);
           }
 
           delete routeCache[cacheKey];

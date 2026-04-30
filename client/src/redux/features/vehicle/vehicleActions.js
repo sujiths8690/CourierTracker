@@ -70,7 +70,7 @@ export const updateVehicle = createAsyncThunk(
   async ({ id, data }, thunkAPI) => {
     try {
       const response = await API.put(`/vehicle/${id}`, data);
-      return response.data;
+      return response.data.data;
     } catch (error) {
       return thunkAPI.rejectWithValue(
         error.response?.data?.message || "Update failed"

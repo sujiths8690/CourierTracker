@@ -205,9 +205,6 @@ export const getBookingById = async (bookingId: number) => {
 export const getAllBookings = async () => {
   try {
     const bookings = await prisma.vehicleBooking.findMany({
-      where: {
-        isActive: true
-      },
       orderBy: {
         createdAt: "desc"
       },
